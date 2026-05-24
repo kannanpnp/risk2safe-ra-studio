@@ -1,687 +1,287 @@
-// Risk2Safe Risk Assessment Studio — AI-Assisted Version
+// ─────────────────────────────────────────────────────────────────────────────
+// Risk2Safe RA Studio — Shared Data Constants
 // EI 3580 (Energy Institute, Jan 2025) + ADNOC HSE-RM-ST01 v1 (Aug 2019)
-// AI features powered by Anthropic Claude API (claude-sonnet-4-20250514)
+// ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useCallback } from "react";
-import {
-  SEV, LIK, MX, CAT, getCat,
-  ENERGIES, EPC, HOC, TOOLS,
-  uid, newStep, newRA, COLORS as C,
-} from "./data.js";
+// ── ADNOC 6×6 RISK MATRIX ────────────────────────────────────────────────────
 
-// ── AI HELPERS ────────────────────────────────────────────────────────────────
+export const SEV = [
+  { id: 6, label: "Disastrous",   short: "DIS", desc: "Multiple fatalities (>10) — workers and/or public" },
+  { id: 5, label: "Catastrophic", short: "CAT", desc: "Multiple fatalities (up to 10) / permanent total disability" },
+  { id: 4, label: "Major",        short: "MAJ", desc: "Single fatality or permanent total disability" },
+  { id: 3, label: "Serious",      short: "SER", desc: "Serious injuries / reversible health effects / partial disability" },
+  { id: 2, label: "Minor",        short: "MIN", desc: "Minor injuries or health effects — weeks to months recovery" },
+  { id: 1, label: "Notable",      short: "NOT", desc: "Slight injuries or short-term health effects" },
+];
 
-const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || "";
+export const LIK = [
+  { id: "A", label: "Term",           freq: "10⁻⁶ ≤ f < 10⁻⁵ /yr", desc: "Has not occurred in 50+ years worldwide in the industry" },
+  { id: "B", label: "Rare",           freq: "10⁻⁵ ≤ f < 10⁻⁴ /yr", desc: "Could happen in next 20–30 years worldwide" },
+  { id: "C", label: "Unlikely",       freq: "10⁻⁴ ≤ f < 10⁻³ /yr", desc: "Could happen within 5–10 years / occurred in industry" },
+  { id: "D", label: "Possible",       freq: "10⁻³ ≤ f < 10⁻² /yr", desc: "Could happen within the 5-year strategic planning period" },
+  { id: "E", label: "Likely",         freq: "10⁻² ≤ f < 10⁻¹ /yr", desc: "Could happen in the next 1–2 year budget period" },
+  { id: "F", label: "Almost Certain", freq: "10⁻¹ ≤ f < 1 /yr",    desc: "Could occur more than once during the next year" },
+];
 
-async function callAI(systemPrompt, userPrompt) {
-  if (!API_KEY) throw new Error("VITE_ANTHROPIC_API_KEY not set in .env.local");
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": API_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
-  });
-  if (!r.ok) throw new Error(`API error ${r.status}`);
-  const d = await r.json();
-  return d.content?.[0]?.text || "";
-}
-
-const AI_SYS = `You are a senior HSE and human factors specialist with deep expertise in EI 3580 (Energy Institute Guidance on Human Factors in Task-Based Risk Assessment, January 2025), ADNOC risk management standards (HSE-RM-ST01), and oil & gas operational safety. You assist in conducting task-based risk assessments integrating energy sources, error-producing conditions (EPCs), and hierarchy of controls. Respond with valid JSON only — no markdown fences, no preamble.`;
-
-async function aiSuggestHazards(stepDesc, energies) {
-  const text = await callAI(AI_SYS,
-    `Task step: "${stepDesc}"\nSelected energy sources: ${energies.join(", ")}\n\nFor each selected energy source, suggest specific hazards relevant to this step in an oil & gas context. Return JSON:\n{"hazards":[{"hazard":"string","energy":"string","consequence":"string","severity_suggestion":1,"justification":"string"}]}`
-  );
-  try { return JSON.parse(text); } catch { return { hazards: [] }; }
-}
-
-async function aiSuggestEPCs(stepDesc, hazards) {
-  const text = await callAI(AI_SYS,
-    `Task step: "${stepDesc}"\nIdentified hazards: ${hazards.join("; ")}\n\nUsing the EI 3580 EPC framework, identify the most likely error-producing conditions. EPC IDs available: j1–j11 (Job Factors), p1–p6 (Person Factors), o1–o4 (Organisation Factors). Return JSON:\n{"epcs":[{"id":"string","label":"string","category":"Job/Person/Organisation","reason":"string","risk_impact":"string"}]}`
-  );
-  try { return JSON.parse(text); } catch { return { epcs: [] }; }
-}
-
-async function aiSuggestControls(stepDesc, hazards, epcLabels, iS, iL) {
-  const cat = getCat(iS, iL);
-  const text = await callAI(AI_SYS,
-    `Task step: "${stepDesc}"\nHazards: ${hazards.join("; ")}\nEPCs: ${epcLabels.join("; ")}\nInitial risk: Severity ${iS}, Likelihood ${iL}${cat ? " → " + CAT[cat].label : ""}\n\nSuggest comprehensive risk controls using hierarchy of controls (Elimination → Substitution → Engineering → Administrative → PPE). Address BOTH hazards and EPCs. Return JSON:\n{"controls":[{"type":"eliminate|substitute|engineering|admin|ppe","measure":"string","addresses":"hazard|epc|both","effectiveness":"High|Medium|Low","rationale":"string"}]}`
-  );
-  try { return JSON.parse(text); } catch { return { controls: [] }; }
-}
-
-async function aiFullReview(ra) {
-  const stepsText = ra.steps.map((s, i) => {
-    const epcLabels = s.epcs.map(id => {
-      for (const cat of Object.values(EPC)) {
-        const item = cat.items.find(i => i.id === id);
-        if (item) return item.label;
-      }
-      return id;
-    });
-    return `Step ${i + 1}: ${s.description} | Energies: ${s.energies.join(",")} | Hazards: ${s.hazards.join(",")} | EPCs: ${epcLabels.join(",")} | Controls: ${s.controls.map(c => c.measure).join(",")} | Initial: ${s.iS || "?"}${s.iL || "?"} | Residual: ${s.rS || "?"}${s.rL || "?"}`;
-  }).join("\n");
-  const text = await callAI(AI_SYS,
-    `Risk Assessment Quality Review\nTask: ${ra.title}\nLocation: ${ra.location}\nDept: ${ra.dept}\nDate: ${ra.date}\n\n${stepsText}\n\nConduct a thorough quality review against EI 3580 six-stage methodology and ADNOC risk management standards. Return JSON:\n{"overall_quality":"Excellent|Good|Adequate|Needs Improvement","completeness_score":0,"summary":"string","strengths":["string"],"findings":[{"severity":"Critical|Major|Minor","step":0,"issue":"string","recommendation":"string"}],"human_factors_coverage":"Good|Partial|Poor","residual_risk_adequate":true}`
-  );
-  try { return JSON.parse(text); } catch { return null; }
-}
-
-// ── STYLES ────────────────────────────────────────────────────────────────────
-
-const S = {
-  app:            { minHeight: "100vh", background: C.bg, color: C.fg, fontFamily: "'DM Sans','Segoe UI',system-ui,sans-serif" },
-  header:         { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", height: 60, background: C.surface, borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, zIndex: 100, gap: 16 },
-  headerLeft:     { display: "flex", alignItems: "center", gap: 20 },
-  logo:           { display: "flex", alignItems: "center", gap: 10 },
-  logoShield:     { fontSize: 28, color: C.amber, lineHeight: 1 },
-  logoName:       { fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" },
-  logoSub:        { fontSize: 10, color: C.fgMuted, letterSpacing: "0.5px", textTransform: "uppercase" },
-  logoBadge:      { fontSize: 11, background: "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.4)", color: "#a78bfa", padding: "2px 8px", borderRadius: 4, letterSpacing: "0.5px" },
-  nav:            { display: "flex", gap: 4, flex: 1, justifyContent: "center" },
-  navBtn:         { background: "transparent", border: "none", color: C.fgMuted, padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 13 },
-  navBtnActive:   { background: "rgba(245,158,11,0.15)", color: C.amber, fontWeight: 600 },
-  headerRight:    { display: "flex", alignItems: "center", gap: 8 },
-  btnAI:          { background: "linear-gradient(135deg,#6d28d9,#4f46e5)", color: "#fff", border: "none", padding: "7px 16px", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 },
-  btnSave:        { background: "rgba(22,163,74,0.2)", color: "#4ade80", border: "1px solid rgba(22,163,74,0.4)", padding: "7px 14px", borderRadius: 6, cursor: "pointer", fontSize: 13 },
-  btnNew:         { background: C.amber, color: "#000", border: "none", padding: "7px 16px", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 700 },
-  page:           { maxWidth: 1200, margin: "0 auto", padding: "32px 24px" },
-  hero:           { background: "linear-gradient(135deg,#111827 0%,#1e2d40 50%,#0f2027 100%)", border: `1px solid ${C.border}`, borderRadius: 12, padding: "32px 36px", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24 },
-  heroTitle:      { fontSize: 28, fontWeight: 800, color: "#fff", margin: "0 0 8px", letterSpacing: "-0.5px" },
-  heroSub:        { color: C.fgMuted, fontSize: 14, margin: 0, lineHeight: 1.6 },
-  heroCta:        { background: C.amber, color: "#000", border: "none", padding: "12px 24px", borderRadius: 8, cursor: "pointer", fontSize: 15, fontWeight: 700, whiteSpace: "nowrap" },
-  statsRow:       { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 },
-  statCard:       { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "20px 16px", textAlign: "center" },
-  statIcon:       { fontSize: 24, marginBottom: 8 },
-  statVal:        { fontSize: 32, fontWeight: 800, color: C.amber },
-  statLabel:      { fontSize: 12, color: C.fgMuted, marginTop: 4 },
-  sectionTitle:   { fontSize: 18, fontWeight: 700, color: "#fff", margin: "28px 0 16px", borderLeft: `3px solid ${C.amber}`, paddingLeft: 12 },
-  stagesGrid:     { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 32 },
-  stageCard:      { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20, cursor: "pointer" },
-  stageNum:       { fontSize: 11, fontWeight: 800, color: C.amberDim, letterSpacing: "1px", marginBottom: 8 },
-  stageIcon:      { fontSize: 24, marginBottom: 8 },
-  stageTitle:     { fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 6 },
-  stageDesc:      { fontSize: 12, color: C.fgMuted, lineHeight: 1.6 },
-  raList:         { display: "flex", flexDirection: "column", gap: 8 },
-  raCard:         { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "16px 20px", cursor: "pointer" },
-  raCardTop:      { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
-  raTitle:        { fontSize: 15, fontWeight: 600, color: "#fff" },
-  raMeta:         { fontSize: 12, color: C.fgMuted, marginTop: 3 },
-  raCardRight:    { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" },
-  statusBadge:    { color: "#fff", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600 },
-  highBadge:      { background: "rgba(220,38,38,0.2)", color: "#f87171", padding: "2px 8px", borderRadius: 4, fontSize: 11 },
-  raStats:        { display: "flex", gap: 16, fontSize: 12, color: C.fgMuted },
-  toolsHeader:    { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 },
-  toolFilter:     { display: "flex", gap: 6 },
-  filterBtn:      { background: "transparent", border: `1px solid ${C.border}`, color: C.fgMuted, padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 13 },
-  filterBtnActive:{ background: "rgba(245,158,11,0.15)", borderColor: C.amber, color: C.amber, fontWeight: 600 },
-  toolsGrid:      { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 },
-  toolCard:       { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20, display: "flex", flexDirection: "column", gap: 10 },
-  toolBadge:      { color: "#fff", fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 4, width: "fit-content" },
-  toolTitle:      { fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 },
-  toolDesc:       { fontSize: 12, color: C.fgMuted, lineHeight: 1.6, margin: 0 },
-  toolSteps:      { display: "flex", flexDirection: "column", gap: 6 },
-  toolStep:       { display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 },
-  toolStepNum:    { minWidth: 20, height: 20, background: "rgba(245,158,11,0.2)", color: C.amber, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 },
-  editorLayout:   { display: "flex", height: "calc(100vh - 60px)", overflow: "hidden" },
-  sidebar:        { width: 270, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", overflow: "hidden" },
-  sidebarHeader:  { padding: 16, borderBottom: `1px solid ${C.border}` },
-  sidebarTitle:   { fontSize: 13, fontWeight: 700, color: "#fff" },
-  sidebarSub:     { fontSize: 11, color: C.fgMuted, marginTop: 2 },
-  stepList:       { flex: 1, overflowY: "auto", padding: 8 },
-  stepItem:       { display: "flex", alignItems: "flex-start", gap: 8, padding: "10px", borderRadius: 7, cursor: "pointer", marginBottom: 4, border: "1px solid transparent" },
-  stepItemActive: { background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.4)" },
-  stepNum:        { fontSize: 10, fontWeight: 800, color: C.fgMuted, minWidth: 22, paddingTop: 2 },
-  stepItemContent:{ flex: 1, minWidth: 0 },
-  stepItemTitle:  { fontSize: 12, fontWeight: 500, color: C.fg, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  stepItemMeta:   { fontSize: 10, color: C.fgMuted, display: "flex", gap: 6, marginTop: 2, flexWrap: "wrap" },
-  stepRisk:       { display: "flex", gap: 4, marginTop: 3 },
-  stepDelete:     { background: "transparent", border: "none", color: C.fgMuted, cursor: "pointer", fontSize: 14, padding: "0 2px" },
-  addStepBtn:     { margin: 8, padding: 10, background: "rgba(245,158,11,0.1)", border: "1px dashed rgba(245,158,11,0.4)", color: C.amber, borderRadius: 7, cursor: "pointer", fontSize: 13, fontWeight: 600 },
-  reviewPanel:    { margin: 8, padding: 12, background: "rgba(79,46,220,0.1)", border: "1px solid rgba(79,46,220,0.3)", borderRadius: 8, fontSize: 12, overflowY: "auto" },
-  reviewTitle:    { color: "#a78bfa", fontWeight: 700, marginBottom: 6 },
-  reviewScore:    { fontSize: 22, fontWeight: 800, marginBottom: 2 },
-  reviewQuality:  { color: C.fgMuted, marginBottom: 6 },
-  reviewSummary:  { color: C.fg, lineHeight: 1.5, marginBottom: 8 },
-  reviewFinding:  { borderLeft: "2px solid", paddingLeft: 8, marginBottom: 6, paddingBottom: 4 },
-  editorMain:     { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
-  tabBar:         { display: "flex", background: C.surface, borderBottom: `1px solid ${C.border}`, overflowX: "auto", flexShrink: 0 },
-  tab:            { background: "transparent", border: "none", borderBottom: "2px solid transparent", color: C.fgMuted, padding: "14px 18px", cursor: "pointer", fontSize: 13, whiteSpace: "nowrap" },
-  tabActive:      { color: C.amber, borderBottomColor: C.amber, fontWeight: 600 },
-  tabContent:     { flex: 1, overflowY: "auto", padding: 24 },
-  tabTitle:       { fontSize: 18, fontWeight: 700, color: "#fff", marginTop: 0, marginBottom: 6 },
-  tabDesc:        { fontSize: 13, color: C.fgMuted, marginTop: 0, marginBottom: 20, lineHeight: 1.6 },
-  formGrid:       { display: "flex", flexDirection: "column", gap: 16 },
-  formRow2:       { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
-  formRow3:       { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 },
-  formGroup:      { display: "flex", flexDirection: "column", gap: 6 },
-  formLabel:      { fontSize: 12, fontWeight: 600, color: C.fgMuted },
-  input:          { background: "#0f172a", border: `1px solid ${C.border}`, borderRadius: 6, padding: "9px 12px", color: C.fg, fontSize: 13, outline: "none", fontFamily: "inherit" },
-  infoBox:        { background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, padding: "12px 16px", fontSize: 13, color: "#93c5fd", lineHeight: 1.6 },
-  wheelWrap:      { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20, marginBottom: 20 },
-  wheelTitle:     { fontSize: 13, fontWeight: 600, color: C.fgMuted, marginBottom: 14 },
-  energyGrid:     { display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8 },
-  energyChip:     { display: "flex", alignItems: "flex-start", gap: 8, padding: 10, borderRadius: 7, cursor: "pointer", border: `1px solid ${C.border}`, background: C.surface },
-  energyChipSel:  { border: "1px solid" },
-  energyName:     { fontSize: 12, fontWeight: 600, color: C.fg },
-  energyEx:       { fontSize: 10, color: C.fgMuted, marginTop: 2, lineHeight: 1.4 },
-  aiBar:          { display: "flex", alignItems: "center", gap: 12, marginBottom: 16, padding: "10px 14px", background: "rgba(79,46,220,0.08)", border: "1px solid rgba(79,46,220,0.2)", borderRadius: 8 },
-  btnAIInline:    { background: "linear-gradient(135deg,#6d28d9,#4f46e5)", color: "#fff", border: "none", padding: "7px 16px", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 },
-  aiDone:         { color: "#4ade80", fontSize: 13 },
-  aiErr:          { color: "#f87171", fontSize: 13 },
-  tagBox:         { display: "flex", flexWrap: "wrap", gap: 6, padding: 8, background: "#0f172a", border: `1px solid ${C.border}`, borderRadius: 6, minHeight: 42 },
-  tag:            { display: "flex", alignItems: "center", gap: 4, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", color: C.amber, borderRadius: 4, padding: "3px 8px", fontSize: 12 },
-  tagDel:         { background: "transparent", border: "none", color: C.amber, cursor: "pointer", fontSize: 14, padding: "0 2px", lineHeight: 1 },
-  tagInput:       { background: "transparent", border: "none", color: C.fg, fontSize: 13, outline: "none", flex: 1, minWidth: 160, fontFamily: "inherit" },
-  epcSection:     { marginBottom: 20 },
-  epcSectionHdr:  { display: "flex", justifyContent: "space-between", alignItems: "center", borderLeft: "3px solid", paddingLeft: 10, marginBottom: 10 },
-  epcGrid:        { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 },
-  epcChip:        { display: "flex", gap: 8, padding: 10, borderRadius: 7, cursor: "pointer", border: `1px solid ${C.border}`, background: C.surface },
-  epcChipSel:     { border: "1px solid" },
-  epcCbx:         { width: 16, height: 16, borderRadius: 3, border: `1px solid ${C.border}`, flexShrink: 0, marginTop: 2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 },
-  epcLabel:       { fontSize: 12, fontWeight: 600, color: C.fg },
-  epcDesc:        { fontSize: 10, color: C.fgMuted, marginTop: 2, lineHeight: 1.4 },
-  hocLegend:      { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 },
-  hocPill:        { border: "1px solid", borderRadius: 6, padding: "4px 12px" },
-  controlCard:    { background: C.surface, border: `1px solid ${C.border}`, borderLeft: "3px solid", borderRadius: 8, padding: 12, marginBottom: 8 },
-  controlHdr:     { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" },
-  ctrlDel:        { background: "rgba(220,38,38,0.15)", border: "none", color: "#f87171", cursor: "pointer", padding: "4px 8px", borderRadius: 4, marginLeft: "auto" },
-  addCtrlBtn:     { width: "100%", padding: 10, background: "transparent", border: `1px dashed ${C.border}`, color: C.fgMuted, borderRadius: 7, cursor: "pointer", fontSize: 13, marginTop: 8 },
-  matrixWrap:     { display: "grid", gridTemplateColumns: "auto 300px", gap: 24, marginBottom: 24 },
-  matrixGrid:     { display: "grid", gridTemplateColumns: "120px repeat(6,1fr)", gap: 2 },
-  matrixCorner:   { background: C.surface2, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", padding: 4 },
-  matrixHdrCell:  { background: C.surface2, borderRadius: 4, padding: "6px 2px", textAlign: "center" },
-  matrixSevCell:  { background: C.surface2, borderRadius: 4, padding: "6px 8px", display: "flex", flexDirection: "column", justifyContent: "center" },
-  matrixHdrSel:   { background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.4)" },
-  matrixHdrLabel: { fontSize: 13, fontWeight: 700, color: C.amber },
-  matrixHdrSub:   { fontSize: 10, color: C.fgMuted },
-  matrixCell:     { borderRadius: 4, padding: "10px 4px", textAlign: "center", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 44, transition: "all 0.12s" },
-  matrixResult:   { display: "flex", flexDirection: "column", gap: 12 },
-  resultBadge:    { color: "#fff", fontWeight: 700, padding: "8px 16px", borderRadius: 8, textAlign: "center", fontSize: 15 },
-  resultSev:      { fontSize: 13, color: C.fg, lineHeight: 1.6 },
-  resultAction:   { border: "1px solid", borderRadius: 7, padding: "10px 14px", fontSize: 13, lineHeight: 1.6 },
-  resultSign:     { background: C.surface2, borderRadius: 7, padding: "10px 14px", fontSize: 13 },
-  resultEmpty:    { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 200, color: C.fgMuted, gap: 10, fontSize: 13 },
-  reducPanel:     { background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 7, padding: 12 },
-  reducRow:       { display: "flex", alignItems: "center", gap: 12, fontSize: 18, fontWeight: 700 },
-  legendGrid:     { display: "flex", flexDirection: "column", gap: 4, marginTop: 8 },
-  legendItem:     { display: "flex", alignItems: "center", gap: 8, padding: "4px 8px", border: "1px solid", borderRadius: 5 },
-  defGrid:        { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
-  defSection:     { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 14 },
-  defTitle:       { fontSize: 12, fontWeight: 700, color: C.fgMuted, marginBottom: 8, letterSpacing: "0.5px", textTransform: "uppercase" },
-  defRow:         { display: "flex", gap: 8, padding: "5px 6px", alignItems: "flex-start" },
-  regHeader:      { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "14px 16px", marginBottom: 16, fontSize: 13 },
-  regSumBar:      { display: "flex", gap: 8, marginBottom: 20 },
-  regSumItem:     { flex: 1, border: "1px solid", borderRadius: 8, padding: 14, textAlign: "center" },
-  regStepCard:    { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, marginBottom: 12, overflow: "hidden" },
-  regStepHdr:     { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: C.surface2, borderBottom: `1px solid ${C.border}` },
-  regStepNum:     { fontSize: 11, fontWeight: 800, color: C.fgMuted },
-  regStepTitle:   { fontSize: 14, fontWeight: 600, color: "#fff", flex: 1 },
-  regCatBadge:    { color: "#fff", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 4 },
-  regStepBody:    { padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 },
-  regSecLabel:    { fontSize: 11, fontWeight: 700, color: C.fgMuted, textTransform: "uppercase" },
-  regTag:         { border: "1px solid", borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600, display: "inline-flex" },
-  regControl:     { display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", background: "rgba(255,255,255,0.02)", borderRadius: 5 },
-  regHocBadge:    { color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 3, whiteSpace: "nowrap" },
-  regRiskFlow:    { display: "flex", alignItems: "center", gap: 16, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 7 },
-  regRiskItem:    { display: "flex", flexDirection: "column", gap: 2 },
-  regFooter:      { display: "flex", gap: 24, padding: 16, border: `1px solid ${C.border}`, borderRadius: 8, background: C.surface, marginTop: 8, fontSize: 13 },
+// Risk matrix lookup: key = severity+likelihood (e.g. "4D"), value = category (1–4)
+export const MX = {
+  "6A": 2, "6B": 1, "6C": 1, "6D": 1, "6E": 1, "6F": 1,
+  "5A": 2, "5B": 2, "5C": 1, "5D": 1, "5E": 1, "5F": 1,
+  "4A": 3, "4B": 2, "4C": 2, "4D": 1, "4E": 1, "4F": 1,
+  "3A": 4, "3B": 3, "3C": 3, "3D": 2, "3E": 1, "3F": 1,
+  "2A": 4, "2B": 4, "2C": 3, "2D": 3, "2E": 2, "2F": 2,
+  "1A": 4, "1B": 4, "1C": 4, "1D": 4, "1E": 4, "1F": 3,
 };
 
-// Cell background colours for risk matrix
-const cellBg = (s, l) => {
-  const c = getCat(s, l);
-  return c === 1 ? "#7f1d1d" : c === 2 ? "#7c2d12" : c === 3 ? "#78350f" : c === 4 ? "#14532d" : "#1e293b";
+export const CAT = {
+  1: { label: "CAT 1 – HIGH",     color: "#dc2626", bg: "rgba(220,38,38,0.15)",  border: "#dc2626", action: "STOP WORK. Reduce to ALARP immediately. Report to Director/GC CEO.",             sign: "Group CEO / Director"        },
+  2: { label: "CAT 2 – HIGH-MED", color: "#ea580c", bg: "rgba(234,88,12,0.15)",  border: "#ea580c", action: "Reduce to ALARP. Quantify MFL & RCE. Include in Risk Register.",                 sign: "Business Manager / SVP"      },
+  3: { label: "CAT 3 – MEDIUM",   color: "#d97706", bg: "rgba(217,119,6,0.15)",  border: "#d97706", action: "Monitor & improve control effectiveness. Include in Risk Register.",             sign: "Dept. Manager / VP"          },
+  4: { label: "CAT 4 – LOW",      color: "#16a34a", bg: "rgba(22,163,74,0.15)",  border: "#16a34a", action: "Low risk. Monitor current controls. Accept when ALARP demonstrated.",           sign: "Line Manager"                },
 };
 
-// ── MAIN APP ──────────────────────────────────────────────────────────────────
+export const getCat = (s, l) => (s && l) ? (MX[`${s}${l}`] || null) : null;
 
-export default function App() {
-  const [view, setView]               = useState("dashboard");
-  const [assessments, setAssessments] = useState([]);
-  const [current, setCurrent]         = useState(null);
-  const [activeStep, setActiveStep]   = useState(0);
-  const [activeTab, setActiveTab]     = useState("info");
-  const [aiState, setAiState]         = useState({});
-  const [reviewResult, setReviewResult] = useState(null);
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [toolFilter, setToolFilter]   = useState("All");
+// ── EI 3580 ENERGY SOURCES (Annex A – Energy & Error Wheel) ─────────────────
 
-  const createNew = () => { const ra = newRA(); setCurrent(ra); setActiveStep(0); setActiveTab("info"); setReviewResult(null); setView("editor"); };
-  const openRA = ra => { setCurrent({ ...ra }); setActiveStep(0); setActiveTab("info"); setReviewResult(null); setView("editor"); };
-  const saveRA = () => {
-    if (!current) return;
-    setAssessments(prev => { const i = prev.findIndex(a => a.id === current.id); if (i >= 0) { const n = [...prev]; n[i] = { ...current }; return n; } return [...prev, { ...current }]; });
-    alert("Assessment saved ✓");
-  };
-  const updateRA   = useCallback((f, v) => setCurrent(c => ({ ...c, [f]: v })), []);
-  const updateStep = useCallback((idx, f, v) => setCurrent(c => { const steps = [...c.steps]; steps[idx] = { ...steps[idx], [f]: v }; return { ...c, steps }; }), []);
-  const addStep    = () => { setCurrent(c => ({ ...c, steps: [...c.steps, newStep()] })); setActiveStep(current ? current.steps.length : 0); };
-  const removeStep = idx => { if (current.steps.length <= 1) return; setCurrent(c => ({ ...c, steps: c.steps.filter((_, i) => i !== idx) })); setActiveStep(s => Math.max(0, s - (s >= idx ? 1 : 0))); };
-  const addControl = idx => updateStep(idx, "controls", [...(current.steps[idx].controls || []), { id: uid(), type: "admin", measure: "", addresses: "hazard", effectiveness: "Medium" }]);
-  const removeCtrl = (si, ci) => updateStep(si, "controls", current.steps[si].controls.filter((_, i) => i !== ci));
-  const updateCtrl = (si, ci, f, v) => { const ctrls = [...current.steps[si].controls]; ctrls[ci] = { ...ctrls[ci], [f]: v }; updateStep(si, "controls", ctrls); };
+export const ENERGIES = [
+  { id: "gravity",     label: "Gravity",         color: "#6366f1", icon: "↓", ex: "Falling objects, collapsing roofs, trips & falls, structural collapse, uncontrolled load release" },
+  { id: "motion",      label: "Motion",           color: "#8b5cf6", icon: "→", ex: "Vehicle movement, flowing water/steam, wind, manual handling, lifting, lowering, bending" },
+  { id: "mechanical",  label: "Mechanical",       color: "#0ea5e9", icon: "⚙", ex: "Rotating equipment, conveyors, motors, pinch points, projectiles, high-speed parts" },
+  { id: "electrical",  label: "Electrical",       color: "#eab308", icon: "⚡", ex: "Live conductors, arc flash, static charge, transformers, overhead power lines" },
+  { id: "pressure",    label: "Pressure",         color: "#3b82f6", icon: "◉", ex: "Compressed gas/air, pressurised vessels, hoses, pipework, hydraulic systems, vacuum" },
+  { id: "temperature", label: "Temperature",      color: "#ef4444", icon: "🌡", ex: "Open flame, hot/cold surfaces, liquids, steam, cryogenics, UV radiation, heat stress" },
+  { id: "chemical",    label: "Chemical",         color: "#10b981", icon: "⬡", ex: "Toxic vapours, H₂S, acids, solvents, dust, asphyxiants, carcinogens, flammable gases" },
+  { id: "biological",  label: "Biological",       color: "#84cc16", icon: "🦠", ex: "Bacteria, viruses, contaminated water/food, insects, animals, sharps, mould" },
+  { id: "radiation",   label: "Radiation",        color: "#f97316", icon: "☢", ex: "Ionising radiation, welding arc, UV, X-rays, microwaves, lasers, NORM" },
+  { id: "sound",       label: "Sound/Vibration",  color: "#ec4899", icon: "〜", ex: "High noise, HAV (hand-arm vibration), WBV, high-pressure relief venting, impulse noise" },
+];
 
-  const setAi = (k, st) => setAiState(p => ({ ...p, [k]: st }));
+// ── EI 3580 ERROR-PRODUCING CONDITIONS (EPCs) ────────────────────────────────
 
-  const doAiHazards = async idx => {
-    const s = current.steps[idx];
-    if (!s.description || !s.energies.length) return alert("Enter step description and select energy sources first.");
-    setAi(`h${idx}`, "loading");
-    try { const res = await aiSuggestHazards(s.description, s.energies); updateStep(idx, "hazards", [...new Set([...s.hazards, ...res.hazards.map(h => h.hazard)])]); setAi(`h${idx}`, "done"); }
-    catch (e) { setAi(`h${idx}`, "error"); alert("AI error: " + e.message); }
-  };
+export const EPC = {
+  job: {
+    color: "#818cf8",
+    label: "Job Factors",
+    items: [
+      { id: "j1",  label: "Information Clarity",    desc: "Unclear signs, signals, labels, or instructions for the task" },
+      { id: "j2",  label: "Equipment Interface",    desc: "Poor equipment design, labelling, alarms, or error tolerance/avoidance" },
+      { id: "j3",  label: "Task Complexity",        desc: "Complex, multi-step, concurrent, or cognitively demanding task" },
+      { id: "j4",  label: "Routine vs Unusual",     desc: "Complacency risk on overly familiar task, or unfamiliarity with unusual task" },
+      { id: "j5",  label: "Divided Attention",      desc: "Requirement to perform simultaneous tasks, interruptions, or distractions" },
+      { id: "j6",  label: "Inadequate Procedures",  desc: "Procedures absent, incomplete, unclear, outdated, or not followed" },
+      { id: "j7",  label: "Preparation Gaps",       desc: "Permits, isolations, pre-task checks or authorisations not completed" },
+      { id: "j8",  label: "Time Pressure",          desc: "Insufficient time allocated to perform the task safely" },
+      { id: "j9",  label: "Unsuitable Tools",       desc: "Tools or equipment not fit-for-purpose for this specific task" },
+      { id: "j10", label: "Communication Barriers", desc: "Language barriers, no radios, misheard or misunderstood information" },
+      { id: "j11", label: "Work Environment",       desc: "Noise, heat/cold, poor lighting, confined space, poor ventilation" },
+    ],
+  },
+  person: {
+    color: "#34d399",
+    label: "Person Factors",
+    items: [
+      { id: "p1", label: "Physical Capability",   desc: "Worker's physical fitness, size, strength, or medical condition limitations" },
+      { id: "p2", label: "Fatigue",               desc: "Acute (shift fatigue) or chronic (long-term accumulated) worker fatigue" },
+      { id: "p3", label: "Stress / Morale",       desc: "Personal stress, anxiety, interpersonal conflict, or poor team morale" },
+      { id: "p4", label: "Workload Imbalance",    desc: "Work overload causing rushing, or boredom from under-stimulation" },
+      { id: "p5", label: "Competence Gap",        desc: "Insufficient training, experience, or skill for this specific task" },
+      { id: "p6", label: "Competing Priorities",  desc: "Peer pressure, production vs safety trade-off, or conflicting instructions" },
+    ],
+  },
+  org: {
+    color: "#c084fc",
+    label: "Organisation Factors",
+    items: [
+      { id: "o1", label: "Production Pressure",  desc: "Pressure from management or schedule to complete quickly at expense of safety" },
+      { id: "o2", label: "Supervision Quality",  desc: "Inadequate level, availability, or nature of supervision for this task" },
+      { id: "o3", label: "Staffing Levels",      desc: "Insufficient number of competent personnel to safely execute the task" },
+      { id: "o4", label: "Unclear Roles",        desc: "Workers unsure of responsibilities, limits of authority, or who is in charge" },
+    ],
+  },
+};
 
-  const doAiEPCs = async idx => {
-    const s = current.steps[idx];
-    if (!s.description) return alert("Enter step description first.");
-    setAi(`e${idx}`, "loading");
-    try {
-      const res = await aiSuggestEPCs(s.description, s.hazards);
-      const allIds = Object.values(EPC).flatMap(c => c.items.map(i => i.id));
-      updateStep(idx, "epcs", [...new Set([...s.epcs, ...res.epcs.map(e => e.id).filter(id => allIds.includes(id))])]);
-      setAi(`e${idx}`, "done");
-    } catch (e) { setAi(`e${idx}`, "error"); alert("AI error: " + e.message); }
-  };
+// ── HIERARCHY OF CONTROLS ─────────────────────────────────────────────────────
 
-  const doAiControls = async idx => {
-    const s = current.steps[idx];
-    if (!s.description || !s.hazards.length) return alert("Identify hazards first.");
-    setAi(`c${idx}`, "loading");
-    try {
-      const epcLabels = s.epcs.map(id => { for (const cat of Object.values(EPC)) { const item = cat.items.find(i => i.id === id); if (item) return item.label; } return id; });
-      const res = await aiSuggestControls(s.description, s.hazards, epcLabels, s.iS, s.iL);
-      updateStep(idx, "controls", [...(s.controls || []), ...res.controls.map(c => ({ id: uid(), type: c.type, measure: c.measure, addresses: c.addresses, effectiveness: c.effectiveness }))]);
-      setAi(`c${idx}`, "done");
-    } catch (e) { setAi(`c${idx}`, "error"); alert("AI error: " + e.message); }
-  };
+export const HOC = [
+  { id: "eliminate",   rank: 1, label: "Elimination",            color: "#1d4ed8", desc: "Physically remove the hazard or do not perform the task" },
+  { id: "substitute",  rank: 2, label: "Substitution",           color: "#2563eb", desc: "Replace the hazard or automate task to remove human exposure" },
+  { id: "engineering", rank: 3, label: "Engineering Control",    color: "#0369a1", desc: "Guard, interlock, isolate, LOTO, forced function, physical barrier" },
+  { id: "admin",       rank: 4, label: "Administrative Control", color: "#6d28d9", desc: "PTW, procedure, training, supervision, task redesign, signage" },
+  { id: "ppe",         rank: 5, label: "PPE",                    color: "#7c3aed", desc: "Personal protective equipment, first aid, emergency response readiness" },
+];
 
-  const doAiReview = async () => {
-    if (!current?.steps?.length) return;
-    setReviewLoading(true);
-    try { setReviewResult(await aiFullReview(current)); }
-    catch (e) { alert("AI review error: " + e.message); }
-    setReviewLoading(false);
-  };
+// ── EI 3580 FRONTLINE TOOLS (Section 4) ──────────────────────────────────────
 
-  const step = current?.steps?.[activeStep];
-  const catStats = assessments.reduce((acc, ra) => { ra.steps.forEach(s => { const c = getCat(s.rS, s.rL); if (c) acc[c] = (acc[c] || 0) + 1; }); return acc; }, {});
+export const TOOLS = [
+  {
+    id: 1, phase: "Pre-job",
+    label: "Identify Energy Sources & EPCs",
+    desc: "Supervisor-led team exercise using the Energy & Error Wheel to identify hazards, EPCs, and risk controls. Takes 20–30 minutes. Best conducted at the worksite.",
+    steps: [
+      "Provide team with Energy & Error Wheel (or use the app)",
+      "Walk through each energy source together — 'Does this energy apply to our task?'",
+      "Walk through EPCs together — 'Are any of these conditions present?'",
+      "Ask workers: Where, what, which phases, which steps are most critical?",
+      "For each applicable energy → identify specific hazards → identify controls",
+      "For each applicable EPC → discuss why it applies → identify controls",
+    ],
+  },
+  {
+    id: 2, phase: "Pre-job",
+    label: "Last Minute Risk Assessment (LMRA)",
+    desc: "Structured checklist of flag conditions assessed immediately before starting work. If any question is answered 'Yes', work must not begin until resolved.",
+    steps: [
+      "Is there anything about this task that makes me feel uneasy?",
+      "Is there time or management pressure that could compromise safety?",
+      "Do I have the correct tools and equipment for the task?",
+      "Are there any hazards that are not adequately controlled?",
+      "Are there any EPCs that need immediate attention?",
+      "Do I have the correct instructions and permits?",
+      "Has anything changed since the task was planned and the RA was done?",
+    ],
+  },
+  {
+    id: 3, phase: "During job",
+    label: "15-Second Scan",
+    desc: "Systematic visual scan of the immediate work area to identify hazards before interacting with equipment. Used by pilots, military, and high-reliability industries.",
+    steps: [
+      "Pause for 15 seconds before starting or resuming work",
+      "Horizontal scan — left to right, then right to left",
+      "Vertical scan — top down, then bottom up",
+      "Close distance to far distance sweep",
+      "Check gauges, readings, and equipment parameters",
+      "Look around and behind equipment for hidden energy sources",
+      "Predict movement — where will moving equipment go?",
+    ],
+  },
+  {
+    id: 4, phase: "During job",
+    label: "Look, Point, Call Out",
+    desc: "Human error prevention technique originating from Japan's railway industry. Physically pointing and calling out increases frontal lobe activity by 25% and reduces errors significantly.",
+    steps: [
+      "LOOK — Fix eyes on the object/equipment you are about to interact with",
+      "POINT — Physically point at the object/equipment with finger or hand",
+      "CALL OUT — Verbally state the name and/or reading aloud (e.g. 'Valve V-102, CLOSED')",
+      "Examples: 'Pressure gauge, 85 PSI' / 'Isolation confirmed, locked out' / 'Tag number matches, correct'",
+    ],
+  },
+  {
+    id: 5, phase: "During job",
+    label: "Self-Check",
+    desc: "Deliberate pause during or after critical task steps to verify action suitability and catch own errors before consequences occur.",
+    steps: [
+      "Pause before executing a critical step",
+      "Mentally rehearse the upcoming step",
+      "Double-check measurements, part numbers, valve numbers, specifications",
+      "Verify tools and instruments are correct and calibrated",
+      "Do not ignore feelings of unease — stop and discuss with supervisor",
+      "After measurement: look away, then look back to confirm the reading",
+      "After all steps: verify each critical step was executed correctly",
+    ],
+  },
+  {
+    id: 6, phase: "During job",
+    label: "Peer-Check",
+    desc: "Two-person verification of critical actions before AND after execution. Highest-reliability error prevention for single critical actions.",
+    steps: [
+      "Both workers pause before executing a critical step",
+      "Worker 1 talks through the intended action, points to equipment",
+      "Worker 2 listens carefully and confirms the action is correct",
+      "Worker 1 executes the agreed action",
+      "Worker 2 observes and confirms the action was executed correctly",
+      "After all steps: Worker 2 independently verifies critical steps",
+    ],
+  },
+  {
+    id: 7, phase: "During job",
+    label: "Criteria for Stopping the Job",
+    desc: "'Stop the Job' authority empowers every worker to halt work if they perceive a safety risk. No repercussions for stopping; immediate support required.",
+    steps: [
+      "Imminent hazard developing or becoming uncontrolled",
+      "Equipment not operating as expected or as described in the procedure",
+      "Sudden environmental change (weather deterioration, reduced visibility, gas release)",
+      "Impossible to comply with the procedure as written — deviation required",
+      "Risk is escalating and likely to worsen",
+      "Insufficient resources (tools, personnel, time) to do the job safely",
+      "Gut feeling that something is wrong — cannot explain it yet",
+      "Near miss or unplanned event has occurred",
+      "Worker is unwell, injured, or fatigued during the task",
+      "Controls have failed or PPE is unavailable/unsuitable",
+    ],
+  },
+  {
+    id: 8, phase: "After job",
+    label: "Independent Verification",
+    desc: "Safety double-check by a person not involved in carrying out the original task. Used for critical systems, energy isolations, and reinstatement.",
+    steps: [
+      "Worker follows instructions, checks own work, and signs off",
+      "Verifier independently visits the workplace",
+      "Verifier examines the work without making changes or taking hints",
+      "Verifier checks the work matches instructions and specifications",
+      "If discrepancy found: alert supervisor — do not proceed",
+      "If work is correct: verifier signs off",
+    ],
+  },
+  {
+    id: 9, phase: "After job",
+    label: "Post-Job Brief Questions",
+    desc: "Structured discussion immediately after task completion to capture lessons learned, close the learning loop, and improve future performance.",
+    steps: [
+      "Was there anything you wish you'd known before starting this task?",
+      "Were there any surprises or unplanned events during the task?",
+      "Which documents or instructions could we improve?",
+      "What additional skills or competencies would be needed next time?",
+      "Can you think of an error you or a colleague made — what can we learn?",
+      "Did you improvise or work around anything? How do we prevent this?",
+      "How could we improve our tools, equipment, or materials?",
+      "How could we improve the planning and preparation for this task?",
+    ],
+  },
+];
 
-  return (
-    <div style={S.app}>
-      {/* HEADER */}
-      <header style={S.header}>
-        <div style={S.headerLeft}>
-          <div style={S.logo}>
-            <span style={S.logoShield}>⬡</span>
-            <div><div style={S.logoName}>Risk2Safe</div><div style={S.logoSub}>Risk Assessment Studio</div></div>
-          </div>
-          <span style={S.logoBadge}>✦ AI-Assisted · Claude</span>
-        </div>
-        <nav style={S.nav}>
-          {[["dashboard","🏠 Dashboard"],["tools","🔧 Frontline Tools"]].map(([v,l]) => (
-            <button key={v} onClick={() => setView(v)} style={{ ...S.navBtn, ...(view === v ? S.navBtnActive : {}) }}>{l}</button>
-          ))}
-          {current && <button onClick={() => setView("editor")} style={{ ...S.navBtn, ...(view === "editor" ? S.navBtnActive : {}) }}>📋 Assessment</button>}
-        </nav>
-        <div style={S.headerRight}>
-          {view === "editor" && current && (
-            <>
-              <button onClick={doAiReview} disabled={reviewLoading} style={S.btnAI}>{reviewLoading ? "⏳ Reviewing…" : "✦ AI Full Review"}</button>
-              <button onClick={saveRA} style={S.btnSave}>💾 Save</button>
-            </>
-          )}
-          <button onClick={createNew} style={S.btnNew}>＋ New Assessment</button>
-        </div>
-      </header>
+// ── UTILITIES ─────────────────────────────────────────────────────────────────
 
-      {/* DASHBOARD */}
-      {view === "dashboard" && (
-        <div style={S.page}>
-          <div style={S.hero}>
-            <div>
-              <h1 style={S.heroTitle}>Task-Based Risk Assessment</h1>
-              <p style={S.heroSub}>AI-assisted · EI 3580 compliant · ADNOC 6×6 risk matrix · Human factors integrated</p>
-            </div>
-            <button onClick={createNew} style={S.heroCta}>Begin New Assessment →</button>
-          </div>
-          <div style={S.statsRow}>
-            {[["📋","Total Assessments",assessments.length],["📝","Total Steps",assessments.reduce((a,r)=>a+r.steps.length,0)],["🔴","HIGH Risk Steps",(catStats[1]||0)+(catStats[2]||0)],["👷","Assessors",new Set(assessments.map(r=>r.assessor).filter(Boolean)).size]].map(([icon,label,val]) => (
-              <div key={label} style={S.statCard}><div style={S.statIcon}>{icon}</div><div style={S.statVal}>{val}</div><div style={S.statLabel}>{label}</div></div>
-            ))}
-          </div>
-          <h2 style={S.sectionTitle}>EI 3580 Six-Stage Methodology</h2>
-          <div style={S.stagesGrid}>
-            {[["01","📋","Identify Task Steps","Review procedures, talk to workers, conduct walk-through. Describe how work is actually done."],["02","⚡","Identify Hazards","Use Energy & Error Wheel to identify hazards arising from each energy source."],["03","🧠","Identify EPCs","Identify potential errors and circumstances that make them more likely."],["04","🛡","Control Hazards & EPCs","Apply hierarchy of controls to both hazards and EPCs."],["05","📄","Record Findings","Document all steps, hazards, EPCs, controls and risk ratings."],["06","🔄","Review Controls","Assign actions, set timelines, monitor implementation."]].map(([n,icon,title,desc]) => (
-              <div key={n} style={S.stageCard} onClick={createNew}><div style={S.stageNum}>{n}</div><div style={S.stageIcon}>{icon}</div><div style={S.stageTitle}>{title}</div><div style={S.stageDesc}>{desc}</div></div>
-            ))}
-          </div>
-          {assessments.length > 0 && (
-            <>
-              <h2 style={S.sectionTitle}>Recent Assessments</h2>
-              <div style={S.raList}>
-                {assessments.map(ra => {
-                  const hi = ra.steps.filter(s => { const c = getCat(s.rS, s.rL); return c === 1 || c === 2; }).length;
-                  return (
-                    <div key={ra.id} style={S.raCard} onClick={() => openRA(ra)}>
-                      <div style={S.raCardTop}>
-                        <div><div style={S.raTitle}>{ra.title || "Untitled"}</div><div style={S.raMeta}>{ra.location}{ra.dept ? " · " + ra.dept : ""} · {ra.date}</div></div>
-                        <div style={S.raCardRight}>
-                          <span style={{ ...S.statusBadge, background: ra.status === "Complete" ? "#16a34a" : "#d97706" }}>{ra.status}</span>
-                          {hi > 0 && <span style={S.highBadge}>⚠ {hi} HIGH</span>}
-                        </div>
-                      </div>
-                      <div style={S.raStats}><span>📝 {ra.steps.length} steps</span><span>🔢 {ra.ra_no}</span><span>👷 {ra.assessor || "No assessor"}</span></div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+export const uid = () => Math.random().toString(36).slice(2, 9);
 
-      {/* FRONTLINE TOOLS */}
-      {view === "tools" && (
-        <div style={S.page}>
-          <div style={S.toolsHeader}>
-            <div><h1 style={S.heroTitle}>Frontline Risk Assessment Tools</h1><p style={S.heroSub}>EI 3580 Section 4 — Tools for use before, during, and after task execution</p></div>
-            <div style={S.toolFilter}>
-              {["All","Pre-job","During job","After job"].map(f => (
-                <button key={f} onClick={() => setToolFilter(f)} style={{ ...S.filterBtn, ...(toolFilter === f ? S.filterBtnActive : {}) }}>
-                  {f === "Pre-job" ? "🔵 " : f === "During job" ? "🟡 " : f === "After job" ? "🟢 " : ""}{f}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={S.toolsGrid}>
-            {TOOLS.filter(t => toolFilter === "All" || t.phase === toolFilter).map(tool => {
-              const pc = tool.phase === "Pre-job" ? "#3b82f6" : tool.phase === "During job" ? "#d97706" : "#16a34a";
-              return (
-                <div key={tool.id} style={S.toolCard}>
-                  <div style={{ ...S.toolBadge, background: pc }}>Tool {tool.id} · {tool.phase}</div>
-                  <h3 style={S.toolTitle}>{tool.label}</h3>
-                  <p style={S.toolDesc}>{tool.desc}</p>
-                  <div style={S.toolSteps}>{tool.steps.map((s, i) => <div key={i} style={S.toolStep}><span style={S.toolStepNum}>{i+1}</span><span>{s}</span></div>)}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+export const newStep = () => ({
+  id: uid(),
+  description: "",
+  energies: [],
+  hazards: [],
+  epcs: [],
+  iS: null,
+  iL: null,
+  controls: [],
+  rS: null,
+  rL: null,
+  notes: "",
+});
 
-      {/* EDITOR */}
-      {view === "editor" && current && (
-        <div style={S.editorLayout}>
-          {/* Sidebar */}
-          <aside style={S.sidebar}>
-            <div style={S.sidebarHeader}><div style={S.sidebarTitle}>Assessment Steps</div><div style={S.sidebarSub}>EI 3580 Stage 1</div></div>
-            <div style={S.stepList}>
-              {current.steps.map((s, i) => {
-                const iC = getCat(s.iS, s.iL), rC = getCat(s.rS, s.rL);
-                return (
-                  <div key={s.id} onClick={() => { setActiveStep(i); setActiveTab("energies"); }} style={{ ...S.stepItem, ...(activeStep === i ? S.stepItemActive : {}) }}>
-                    <div style={S.stepNum}>{String(i+1).padStart(2,"0")}</div>
-                    <div style={S.stepItemContent}>
-                      <div style={S.stepItemTitle}>{s.description || "Step " + (i+1)}</div>
-                      <div style={S.stepItemMeta}>{s.energies.length > 0 && <span>{s.energies.length} energy</span>}{s.hazards.length > 0 && <span>{s.hazards.length} hazard</span>}{s.controls.length > 0 && <span>{s.controls.length} ctrl</span>}</div>
-                      {(iC || rC) && <div style={S.stepRisk}>{iC && <span style={{ color: CAT[iC].color, fontSize: 10 }}>{s.iS}{s.iL}→</span>}{rC && <span style={{ color: CAT[rC].color, fontWeight: 700, fontSize: 10 }}>{s.rS}{s.rL}</span>}</div>}
-                    </div>
-                    <button onClick={e => { e.stopPropagation(); removeStep(i); }} style={S.stepDelete}>×</button>
-                  </div>
-                );
-              })}
-            </div>
-            <button onClick={addStep} style={S.addStepBtn}>＋ Add Step</button>
-            {reviewResult && (
-              <div style={S.reviewPanel}>
-                <div style={S.reviewTitle}>✦ AI Quality Review</div>
-                <div style={{ ...S.reviewScore, color: reviewResult.completeness_score >= 80 ? "#16a34a" : reviewResult.completeness_score >= 60 ? "#d97706" : "#dc2626" }}>{reviewResult.completeness_score}%</div>
-                <div style={S.reviewQuality}>{reviewResult.overall_quality}</div>
-                <div style={S.reviewSummary}>{reviewResult.summary}</div>
-                {reviewResult.findings?.map((f, i) => (
-                  <div key={i} style={{ ...S.reviewFinding, borderColor: f.severity === "Critical" ? "#dc2626" : f.severity === "Major" ? "#ea580c" : "#d97706" }}>
-                    <div style={{ color: f.severity === "Critical" ? "#dc2626" : f.severity === "Major" ? "#ea580c" : "#d97706", fontSize: 10, fontWeight: 700 }}>{f.severity}{f.step ? " · Step " + f.step : ""}</div>
-                    <div style={{ fontSize: 11 }}>{f.issue}</div>
-                    <div style={{ fontSize: 10, color: C.fgMuted, marginTop: 3 }}>{f.recommendation}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </aside>
+export const newRA = () => ({
+  id: uid(),
+  title: "",
+  location: "",
+  dept: "",
+  date: new Date().toISOString().split("T")[0],
+  permitNo: "",
+  ra_no: "RA-" + Date.now().toString().slice(-6),
+  assessor: "",
+  approver: "",
+  reviewer: "",
+  status: "Draft",
+  steps: [newStep()],
+});
 
-          {/* Main */}
-          <main style={S.editorMain}>
-            <div style={S.tabBar}>
-              {[["info","Task Info"],["energies","Energies & Hazards"],["epcs","Error Conditions"],["initial","Initial Risk"],["controls","Controls"],["residual","Residual Risk"],["register","Risk Register"]].map(([id, label]) => (
-                <button key={id} onClick={() => setActiveTab(id)} style={{ ...S.tab, ...(activeTab === id ? S.tabActive : {}) }}>{label}</button>
-              ))}
-            </div>
-            <div style={S.tabContent}>
-              {activeTab === "info" && <InfoTab current={current} step={step} activeStep={activeStep} updateRA={updateRA} updateStep={updateStep} S={S} />}
-              {activeTab === "energies" && step && <EnergiesTab step={step} activeStep={activeStep} updateStep={updateStep} aiState={aiState} doAiHazards={doAiHazards} S={S} />}
-              {activeTab === "epcs" && step && <EPCTab step={step} activeStep={activeStep} updateStep={updateStep} aiState={aiState} doAiEPCs={doAiEPCs} S={S} />}
-              {activeTab === "initial" && step && <MatrixTab title="Stage 2/3 — Initial Risk Rating" desc="Rate the inherent risk BEFORE any controls are applied. Consider the worst credible outcome." sKey="iS" lKey="iL" step={step} stepIdx={activeStep} updateStep={updateStep} S={S} />}
-              {activeTab === "controls" && step && <ControlsTab step={step} activeStep={activeStep} updateStep={updateStep} aiState={aiState} doAiControls={doAiControls} addControl={addControl} removeCtrl={removeCtrl} updateCtrl={updateCtrl} S={S} />}
-              {activeTab === "residual" && step && <MatrixTab title="Stage 4/5 — Residual Risk Rating" desc="Rate the risk AFTER all controls are implemented. Target ALARP. Residual risk must be lower than initial." sKey="rS" lKey="rL" step={step} stepIdx={activeStep} updateStep={updateStep} showReduction S={S} />}
-              {activeTab === "register" && <RegisterTab ra={current} S={S} />}
-            </div>
-          </main>
-        </div>
-      )}
-    </div>
-  );
-}
+// ── SHARED COLOUR TOKENS ──────────────────────────────────────────────────────
 
-// ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
-
-function InfoTab({ current, step, activeStep, updateRA, updateStep, S }) {
-  return (
-    <div style={S.formGrid}>
-      <h2 style={S.tabTitle}>📋 Task & Assessment Information</h2>
-      <div style={S.formRow2}>{[["RA Number","ra_no"],["Permit No","permitNo"]].map(([l,f]) => <div key={f} style={S.formGroup}><label style={S.formLabel}>{l}</label><input value={current[f]||""} onChange={e=>updateRA(f,e.target.value)} style={S.input} /></div>)}</div>
-      <div style={S.formGroup}><label style={S.formLabel}>Task / Work Description *</label><input value={current.title||""} onChange={e=>updateRA("title",e.target.value)} style={S.input} placeholder="e.g. Hot work on crude oil piping at Tank Farm 3" /></div>
-      <div style={S.formRow2}>{[["Location / Area","location"],["Department","dept"]].map(([l,f]) => <div key={f} style={S.formGroup}><label style={S.formLabel}>{l}</label><input value={current[f]||""} onChange={e=>updateRA(f,e.target.value)} style={S.input} /></div>)}</div>
-      <div style={S.formRow3}>{[["Date","date","date"],["Assessor","assessor","text"],["Approver","approver","text"]].map(([l,f,t]) => <div key={f} style={S.formGroup}><label style={S.formLabel}>{l}</label><input type={t} value={current[f]||""} onChange={e=>updateRA(f,e.target.value)} style={S.input} /></div>)}</div>
-      <div style={S.formRow2}><div style={S.formGroup}><label style={S.formLabel}>Reviewer</label><input value={current.reviewer||""} onChange={e=>updateRA("reviewer",e.target.value)} style={S.input} /></div><div style={S.formGroup}><label style={S.formLabel}>Status</label><select value={current.status} onChange={e=>updateRA("status",e.target.value)} style={S.input}>{["Draft","In Review","Approved","Complete","Archived"].map(s=><option key={s}>{s}</option>)}</select></div></div>
-      <div style={S.infoBox}><strong>Stage 1:</strong> Use the sidebar to add task steps. Describe exactly how work is performed — as it actually happens, not just as procedures intend.</div>
-      <div style={S.formGroup}><label style={S.formLabel}>Step {activeStep+1} Description *</label><textarea value={step?.description||""} onChange={e=>updateStep(activeStep,"description",e.target.value)} style={{ ...S.input, height: 80, resize: "vertical" }} placeholder="Describe exactly what the worker does in this step…" /></div>
-    </div>
-  );
-}
-
-function EnergiesTab({ step, activeStep, updateStep, aiState, doAiHazards, S }) {
-  return (
-    <div>
-      <h2 style={S.tabTitle}>⚡ Stage 2 — Energy Sources & Hazards</h2>
-      <p style={S.tabDesc}>Select applicable energy sources, then identify specific hazards each can cause in this step.</p>
-      <div style={S.wheelWrap}>
-        <div style={S.wheelTitle}>Energy & Error Wheel — Select Applicable Sources</div>
-        <div style={S.energyGrid}>
-          {ENERGIES.map(en => {
-            const sel = step.energies.includes(en.id);
-            return (
-              <div key={en.id} onClick={() => updateStep(activeStep, "energies", sel ? step.energies.filter(e=>e!==en.id) : [...step.energies, en.id])} style={{ ...S.energyChip, ...(sel ? { ...S.energyChipSel, borderColor: en.color, background: en.color + "22" } : {}) }}>
-                <span style={{ fontSize: 18 }}>{en.icon}</span>
-                <div><div style={{ ...S.energyName, ...(sel ? { color: en.color } : {}) }}>{en.label}</div><div style={S.energyEx}>{en.ex}</div></div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <div style={S.aiBar}>
-        <button onClick={() => doAiHazards(activeStep)} disabled={aiState[`h${activeStep}`] === "loading"} style={S.btnAIInline}>{aiState[`h${activeStep}`] === "loading" ? "⏳ Identifying…" : "✦ AI: Suggest Hazards from Selected Energies"}</button>
-        {aiState[`h${activeStep}`] === "done" && <span style={S.aiDone}>✓ Hazards added</span>}
-        {aiState[`h${activeStep}`] === "error" && <span style={S.aiErr}>⚠ AI error — check API key in .env.local</span>}
-      </div>
-      <div style={S.formGroup}>
-        <label style={S.formLabel}>Hazards Identified</label>
-        <div style={S.tagBox}>
-          {step.hazards.map((h, i) => <div key={i} style={S.tag}><span>{h}</span><button onClick={() => updateStep(activeStep,"hazards",step.hazards.filter((_,j)=>j!==i))} style={S.tagDel}>×</button></div>)}
-          <input placeholder="Type hazard and press Enter…" style={S.tagInput} onKeyDown={e => { if (e.key==="Enter"&&e.target.value.trim()) { updateStep(activeStep,"hazards",[...step.hazards,e.target.value.trim()]); e.target.value=""; }}} />
-        </div>
-      </div>
-      <div style={S.infoBox}><strong>EI 3580 §3.2:</strong> Describe what the hazard does, not just the energy. Example: Energy → Electrical → Hazard: Arc flash causing burns to face and hands.</div>
-    </div>
-  );
-}
-
-function EPCTab({ step, activeStep, updateStep, aiState, doAiEPCs, S }) {
-  return (
-    <div>
-      <h2 style={S.tabTitle}>🧠 Stage 3 — Error-Producing Conditions</h2>
-      <p style={S.tabDesc}>Identify circumstances that make it more likely workers will make unintentional errors in this step.</p>
-      <div style={S.aiBar}>
-        <button onClick={() => doAiEPCs(activeStep)} disabled={aiState[`e${activeStep}`] === "loading"} style={S.btnAIInline}>{aiState[`e${activeStep}`] === "loading" ? "⏳ Analysing…" : "✦ AI: Suggest Error-Producing Conditions"}</button>
-        {aiState[`e${activeStep}`] === "done" && <span style={S.aiDone}>✓ EPCs selected</span>}
-      </div>
-      {Object.entries(EPC).map(([cat, { color, label, items }]) => (
-        <div key={cat} style={S.epcSection}>
-          <div style={{ ...S.epcSectionHdr, borderColor: color }}><span style={{ color, fontWeight: 700 }}>{label}</span><span style={{ color: C.fgMuted, fontSize: 12 }}>{items.filter(i=>step.epcs.includes(i.id)).length} selected</span></div>
-          <div style={S.epcGrid}>
-            {items.map(item => {
-              const sel = step.epcs.includes(item.id);
-              return (
-                <div key={item.id} onClick={() => updateStep(activeStep,"epcs",sel?step.epcs.filter(e=>e!==item.id):[...step.epcs,item.id])} style={{ ...S.epcChip, ...(sel ? { ...S.epcChipSel, borderColor: color, background: color + "18" } : {}) }}>
-                  <div style={{ ...S.epcCbx, ...(sel ? { background: color + "30" } : {}) }}>{sel && <span style={{ color }}>✓</span>}</div>
-                  <div><div style={{ ...S.epcLabel, ...(sel ? { color } : {}) }}>{item.label}</div><div style={S.epcDesc}>{item.desc}</div></div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-      <div style={S.infoBox}><strong>EI 3580 Guidance:</strong> Ask workers: "What makes this step difficult?", "What would you tell a new person to watch out for?", "What mistakes have happened in the past?"</div>
-    </div>
-  );
-}
-
-function ControlsTab({ step, activeStep, updateStep, aiState, doAiControls, addControl, removeCtrl, updateCtrl, S }) {
-  return (
-    <div>
-      <h2 style={S.tabTitle}>🛡 Stage 4 — Risk Controls</h2>
-      <p style={S.tabDesc}>Apply hierarchy of controls to both hazards AND error-producing conditions. Higher levels are always preferred.</p>
-      <div style={S.hocLegend}>{HOC.map(h => <div key={h.id} style={{ ...S.hocPill, background: h.color + "22", borderColor: h.color }}><span style={{ color: h.color, fontWeight: 700, fontSize: 11 }}>{h.rank}. {h.label}</span></div>)}</div>
-      <div style={S.aiBar}>
-        <button onClick={() => doAiControls(activeStep)} disabled={aiState[`c${activeStep}`] === "loading"} style={S.btnAIInline}>{aiState[`c${activeStep}`] === "loading" ? "⏳ Generating…" : "✦ AI: Suggest Hierarchy-Aligned Controls"}</button>
-        {aiState[`c${activeStep}`] === "done" && <span style={S.aiDone}>✓ Controls added</span>}
-      </div>
-      {step.controls.map((ctrl, ci) => {
-        const h = HOC.find(h => h.id === ctrl.type) || HOC[3];
-        return (
-          <div key={ctrl.id} style={{ ...S.controlCard, borderLeftColor: h.color }}>
-            <div style={S.controlHdr}>
-              <select value={ctrl.type} onChange={e=>updateCtrl(activeStep,ci,"type",e.target.value)} style={{ ...S.input, width: 180, fontSize: 12 }}>{HOC.map(h=><option key={h.id} value={h.id}>{h.rank}. {h.label}</option>)}</select>
-              <select value={ctrl.addresses||"hazard"} onChange={e=>updateCtrl(activeStep,ci,"addresses",e.target.value)} style={{ ...S.input, width: 130, fontSize: 12 }}><option value="hazard">→ Hazard</option><option value="epc">→ EPC</option><option value="both">→ Both</option></select>
-              <select value={ctrl.effectiveness||"Medium"} onChange={e=>updateCtrl(activeStep,ci,"effectiveness",e.target.value)} style={{ ...S.input, width: 110, fontSize: 12 }}>{["High","Medium","Low"].map(e=><option key={e}>{e}</option>)}</select>
-              <button onClick={()=>removeCtrl(activeStep,ci)} style={S.ctrlDel}>×</button>
-            </div>
-            <textarea value={ctrl.measure||""} onChange={e=>updateCtrl(activeStep,ci,"measure",e.target.value)} placeholder="Describe the specific control measure, responsible person, and implementation…" style={{ ...S.input, height: 60, resize: "vertical", marginTop: 8, width: "100%", boxSizing: "border-box" }} />
-          </div>
-        );
-      })}
-      <button onClick={()=>addControl(activeStep)} style={S.addCtrlBtn}>＋ Add Control Measure</button>
-      <div style={{ ...S.infoBox, marginTop: 12 }}><strong>EI 3580 §3.4 Validation:</strong> For each administrative control, ask: (1) Will this still be in place in 5 years? (2) If a fatality occurred today, would this control withstand scrutiny?</div>
-    </div>
-  );
-}
-
-function MatrixTab({ title, desc, sKey, lKey, step, stepIdx, updateStep, showReduction, S }) {
-  const selS = step[sKey], selL = step[lKey];
-  const cat = getCat(selS, selL);
-  return (
-    <div>
-      <h2 style={S.tabTitle}>{title}</h2>
-      <p style={S.tabDesc}>{desc}</p>
-      <div style={S.matrixWrap}>
-        <div style={S.matrixGrid}>
-          <div style={S.matrixCorner}><span style={{ fontSize: 10, color: C.fgMuted }}>SEV↓/LIK→</span></div>
-          {LIK.map(l => <div key={l.id} style={{ ...S.matrixHdrCell, ...(selL===l.id?S.matrixHdrSel:{}) }}><div style={S.matrixHdrLabel}>{l.id}</div><div style={S.matrixHdrSub}>{l.label}</div></div>)}
-          {SEV.map(sv => (
-            <React.Fragment key={sv.id}>
-              <div style={{ ...S.matrixSevCell, ...(selS===sv.id?S.matrixHdrSel:{}) }}><div style={S.matrixHdrLabel}>{sv.id}</div><div style={S.matrixHdrSub}>{sv.label}</div></div>
-              {LIK.map(l => {
-                const isSel = selS===sv.id && selL===l.id;
-                const c = getCat(sv.id, l.id);
-                return (
-                  <div key={sv.id+l.id} onClick={() => { updateStep(stepIdx,sKey,sv.id); updateStep(stepIdx,lKey,l.id); }}
-                    style={{ ...S.matrixCell, background: isSel?(cat?CAT[cat].color:"#f59e0b"):cellBg(sv.id,l.id), transform: isSel?"scale(1.15)":"scale(1)", zIndex: isSel?10:1, boxShadow: isSel?"0 0 0 3px #f59e0b,0 4px 12px rgba(0,0,0,0.5)":"none" }}>
-                    <div style={{ fontSize: 11, fontWeight: isSel?700:500, color: "#fff" }}>{sv.id}{l.id}</div>
-                    {c && <div style={{ fontSize: 9, color: "rgba(255,255,255,0.8)" }}>{["","H","HM","M","L"][c]}</div>}
-                  </div>
-                );
-              })}
-            </React.Fragment>
-          ))}
-        </div>
-        <div style={S.matrixResult}>
-          {cat ? (
-            <>
-              <div style={{ ...S.resultBadge, background: CAT[cat].color }}>{selS}{selL} — {CAT[cat].label}</div>
-              <div style={S.resultSev}><strong>Severity {selS}:</strong> {SEV.find(s=>s.id===selS)?.desc}</div>
-              <div style={S.resultSev}><strong>Likelihood {selL}:</strong> {LIK.find(l=>l.id===selL)?.desc}</div>
-              <div style={{ ...S.resultAction, borderColor: CAT[cat].color }}><div style={{ color: CAT[cat].color, fontWeight: 700, marginBottom: 4 }}>Required Action</div>{CAT[cat].action}</div>
-              <div style={S.resultSign}><div style={{ fontSize: 11, color: C.fgMuted }}>Sign-off Authority</div><div style={{ fontWeight: 600 }}>{CAT[cat].sign}</div></div>
-              {showReduction && step.iS && step.iL && (
-                <div style={S.reducPanel}>
-                  <div style={{ fontSize: 12, color: C.fgMuted, marginBottom: 6 }}>Risk Reduction</div>
-                  <div style={S.reducRow}><span style={{ color: CAT[getCat(step.iS,step.iL)||4].color, fontWeight: 700 }}>{step.iS}{step.iL}</span><span style={{ fontSize: 18 }}>→</span><span style={{ color: CAT[cat].color, fontWeight: 700 }}>{selS}{selL}</span></div>
-                  {getCat(step.iS,step.iL) < cat ? <div style={{ color: "#16a34a", fontSize: 12, marginTop: 4 }}>✓ Risk successfully reduced</div> : <div style={{ color: "#dc2626", fontSize: 12, marginTop: 4 }}>⚠ Controls have not reduced risk category</div>}
-                </div>
-              )}
-            </>
-          ) : <div style={S.resultEmpty}><div style={{ fontSize: 32 }}>☐</div><div>Click a cell to select risk rating</div></div>}
-          <div style={S.legendGrid}>{Object.entries(CAT).map(([c,{label,color}]) => <div key={c} style={{ ...S.legendItem, borderColor: color }}><div style={{ width: 10, height: 10, background: color, borderRadius: 2 }}></div><span style={{ fontSize: 11, color }}>{label}</span></div>)}</div>
-        </div>
-      </div>
-      <div style={S.defGrid}>
-        <div style={S.defSection}><div style={S.defTitle}>Severity Definitions</div>{SEV.map(s => <div key={s.id} style={{ ...S.defRow, ...(selS===s.id?{background:"rgba(245,158,11,0.1)",borderRadius:6}:{}) }}><span style={{ width:20,fontWeight:700,color:C.amber }}>{s.id}</span><span style={{ width:90,fontWeight:600 }}>{s.label}</span><span style={{ color:C.fgMuted,fontSize:12 }}>{s.desc}</span></div>)}</div>
-        <div style={S.defSection}><div style={S.defTitle}>Likelihood Definitions</div>{LIK.map(l => <div key={l.id} style={{ ...S.defRow, ...(selL===l.id?{background:"rgba(245,158,11,0.1)",borderRadius:6}:{}) }}><span style={{ width:20,fontWeight:700,color:C.amber }}>{l.id}</span><span style={{ width:115,fontWeight:600 }}>{l.label}</span><span style={{ color:C.fgMuted,fontSize:12 }}>{l.desc}</span></div>)}</div>
-      </div>
-    </div>
-  );
-}
-
-function RegisterTab({ ra, S }) {
-  const allEpcItems = Object.values(EPC).flatMap(c => c.items);
-  return (
-    <div>
-      <h2 style={S.tabTitle}>📄 Stage 5 — Risk Register Summary</h2>
-      <div style={S.regHeader}><div><strong>Task:</strong> {ra.title||"—"}</div><div><strong>Location:</strong> {ra.location||"—"}</div><div><strong>RA No:</strong> {ra.ra_no}</div><div><strong>Date:</strong> {ra.date}</div><div><strong>Assessor:</strong> {ra.assessor||"—"}</div><div><strong>Approver:</strong> {ra.approver||"—"}</div></div>
-      <div style={S.regSumBar}>{Object.entries(CAT).map(([c,{label,color}]) => { const count = ra.steps.filter(s=>String(getCat(s.rS,s.rL))===c).length; return <div key={c} style={{ ...S.regSumItem, borderColor: color, background: color+"18" }}><div style={{ color, fontWeight: 700, fontSize: 13 }}>{label}</div><div style={{ fontSize: 24, fontWeight: 800, color }}>{count}</div><div style={{ color: C.fgMuted, fontSize: 11 }}>steps</div></div>; })}</div>
-      {ra.steps.map((step, i) => {
-        const iC = getCat(step.iS,step.iL), rC = getCat(step.rS,step.rL);
-        return (
-          <div key={step.id} style={S.regStepCard}>
-            <div style={S.regStepHdr}><div style={S.regStepNum}>Step {i+1}</div><div style={S.regStepTitle}>{step.description||"No description"}</div>{rC && <div style={{ ...S.regCatBadge, background: CAT[rC].color }}>{step.rS}{step.rL} · {CAT[rC].label}</div>}</div>
-            <div style={S.regStepBody}>
-              {step.energies.length > 0 && <div><div style={S.regSecLabel}>Energy Sources</div><div style={{ display:"flex",flexWrap:"wrap",gap:6,marginTop:4 }}>{step.energies.map(eid => { const en = ENERGIES.find(e=>e.id===eid); return en ? <span key={eid} style={{ ...S.regTag, borderColor: en.color, color: en.color }}>{en.icon} {en.label}</span> : null; })}</div></div>}
-              {step.hazards.length > 0 && <div><div style={S.regSecLabel}>Hazards</div><div style={{ display:"flex",flexWrap:"wrap",gap:6,marginTop:4 }}>{step.hazards.map((h,j) => <span key={j} style={{ ...S.regTag, borderColor:"#ef4444",color:"#ef4444" }}>{h}</span>)}</div></div>}
-              {step.epcs.length > 0 && <div><div style={S.regSecLabel}>Error-Producing Conditions</div><div style={{ display:"flex",flexWrap:"wrap",gap:6,marginTop:4 }}>{step.epcs.map(id => { const item = allEpcItems.find(i=>i.id===id); return item ? <span key={id} style={{ ...S.regTag, borderColor:"#8b5cf6",color:"#8b5cf6" }}>{item.label}</span> : null; })}</div></div>}
-              {step.controls.length > 0 && <div><div style={S.regSecLabel}>Control Measures</div>{step.controls.map((ctrl,ci) => { const h = HOC.find(h=>h.id===ctrl.type); return <div key={ctrl.id} style={S.regControl}><span style={{ ...S.regHocBadge, background: h?.color||"#666" }}>{h?.rank}. {h?.label}</span><span style={{ fontSize: 13 }}>{ctrl.measure}</span><span style={{ fontSize: 11, color: C.fgMuted, marginLeft: "auto" }}>{ctrl.effectiveness}</span></div>; })}</div>}
-              <div style={S.regRiskFlow}>
-                <div style={S.regRiskItem}><div style={{ fontSize: 10, color: C.fgMuted }}>Initial Risk</div>{iC ? <div style={{ color: CAT[iC].color, fontWeight: 700 }}>{step.iS}{step.iL} · {CAT[iC].label}</div> : <div style={{ color: C.fgMuted }}>Not rated</div>}</div>
-                <div style={{ fontSize: 18, color: C.fgMuted }}>→</div>
-                <div style={S.regRiskItem}><div style={{ fontSize: 10, color: C.fgMuted }}>Residual Risk</div>{rC ? <div style={{ color: CAT[rC].color, fontWeight: 700 }}>{step.rS}{step.rL} · {CAT[rC].label}</div> : <div style={{ color: C.fgMuted }}>Not rated</div>}</div>
-                {rC && <div style={S.regRiskItem}><div style={{ fontSize: 10, color: C.fgMuted }}>Sign-off</div><div style={{ fontSize: 12 }}>{CAT[rC].sign}</div></div>}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-      <div style={S.regFooter}><div style={{ flex: 1 }}><strong>Assessor:</strong> {ra.assessor||"_________________"}</div><div style={{ flex: 1 }}><strong>Approver:</strong> {ra.approver||"_________________"}</div><div style={{ flex: 1 }}><strong>Reviewer:</strong> {ra.reviewer||"_________________"}</div></div>
-    </div>
-  );
-}
-
-// Need React import for Fragment in MatrixTab
-import React from "react";
+export const COLORS = {
+  bg:      "#0b1220",
+  surface: "#111827",
+  surface2:"#1e293b",
+  border:  "#1e3a5f",
+  fg:      "#e2e8f0",
+  fgMuted: "#94a3b8",
+  amber:   "#f59e0b",
+  amberDim:"#92400e",
+};
