@@ -359,7 +359,7 @@ select{cursor:pointer}
   </div>
   <h1>Risk<span>2</span>Safe RA Studio</h1>
   <span class="hdr-badge">Task-Based Risk Assessment</span>
-  <div class="hdr-sub">EI 3580 Methodology &nbsp;|&nbsp; ADNOC 6×6 Matrix &nbsp;|&nbsp; AI-Assisted &nbsp;|&nbsp; <a href="manual.html" style="color:var(--green);text-decoration:none;border-bottom:1px dotted var(--green)">📋 Switch to Manual Mode →</a></div>
+  <div class="hdr-sub">EI 3580 Methodology &nbsp;|&nbsp; 6×6 Matrix &nbsp;|&nbsp; AI-Assisted &nbsp;|&nbsp; <a href="manual.html" style="color:var(--green);text-decoration:none;border-bottom:1px dotted var(--green)">📋 Switch to Manual Mode →</a></div>
 </header>
 
 <div class="app">
@@ -404,7 +404,7 @@ select{cursor:pointer}
 <div class="modal-overlay" id="riskModal">
   <div class="modal-box wide matrix-modal-box">
     <div class="modal-title" id="riskModalTitle">Select Risk Level</div>
-    <div class="modal-sub" style="margin-bottom:10px">Click a cell on the 6×6 ADNOC Corporate Risk Matrix to select Severity and Likelihood. Hover any cell for descriptions.</div>
+    <div class="modal-sub" style="margin-bottom:10px">Click a cell on the 6×6 Corporate Risk Matrix to select Severity and Likelihood. Hover any cell for descriptions.</div>
     <div id="riskMatrixGrid"></div>
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
       <span class="risk-chip RED" style="font-size:.65rem">● RED — Intolerable: Reduce ALARP immediately</span>
@@ -476,7 +476,7 @@ select{cursor:pointer}
 <script>
 // ════════════════════════════════════════════════════════════
 // RISK2SAFE RA STUDIO — Full Application JavaScript
-// EI 3580 Task-Based Risk Assessment + ADNOC 6×6 Matrix
+// EI 3580 Task-Based Risk Assessment + 6×6 Matrix
 // ════════════════════════════════════════════════════════════
 
 // ── DATA DEFINITIONS ─────────────────────────────────────────
@@ -550,7 +550,7 @@ var CONTROL_TYPES = [
   {id:'ppe',label:'PPE',abbrev:'PPE',desc:'Personal protective equipment — last resort. Does not prevent hazard, only mitigates consequence. Least effective.',cls:'ctrl-ppe',hier:'active-ppe',color:'#e74c3c'}
 ];
 
-// ADNOC 6×6 Risk Matrix
+// 6×6 Risk Matrix
 var SEVERITY = [
   {n:6,label:'Disastrous',desc:'More than 10 fatalities or massive permanent environmental damage',short:'Disastrous'},
   {n:5,label:'Catastrophic',desc:'Multiple fatalities (up to 10) or serious permanent environmental damage',short:'Catastrophic'},
@@ -711,7 +711,7 @@ function renderDashboard(){
   var progress=Math.round((s.title&&s.description&&s.steps.length&&totalHazards&&controlCount)?Math.min(100,20+(s.steps.length*10)+(totalHazards*8)+(controlCount*5)):0);
 
   return '<div class="db-hero"><div class="db-hero-title">Risk<span>2</span>Safe RA Studio</div>'+
-    '<div class="db-hero-sub">AI-powered task-based risk assessment following EI 3580 guidance with ADNOC 6×6 risk ranking. Identify hazards using energy sources, assess error-producing conditions, apply hierarchy of controls, and rate initial and residual risk.</div>'+
+    '<div class="db-hero-sub">AI-powered task-based risk assessment following EI 3580 guidance with 6×6 risk ranking. Identify hazards using energy sources, assess error-producing conditions, apply hierarchy of controls, and rate initial and residual risk.</div>'+
     (s.title?'<div style="background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.3);border-radius:6px;padding:10px 14px;display:inline-block;margin-top:6px">'+
     '<span style="font-size:.72rem;color:var(--muted)">Current: </span><strong style="color:var(--accent)">'+esc(s.title)+'</strong>'+
     '<div style="font-size:.66rem;color:var(--muted);margin-top:2px">'+esc(s.location||'No location')+(s.date?' | '+s.date:'')+'</div>'+
@@ -1965,7 +1965,7 @@ function buildReportHTML(){
   h+='<div style="font-size:9pt;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-top:14px">Location</div><div>'+esc(s.location||'—')+'</div>';
   h+='<div style="font-size:9pt;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-top:10px">Date</div><div>'+esc(s.date||dateStr)+'</div>';
   h+='<div style="font-size:9pt;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-top:10px">Assessor</div><div>'+esc(s.assessor||'—')+'</div>';
-  h+='</div><div style="margin-top:60px;color:#94a3b8;font-size:10pt">Risk2Safe RA Studio — Powered by EI 3580 & ADNOC 6×6 Matrix</div></div>';
+  h+='</div><div style="margin-top:60px;color:#94a3b8;font-size:10pt">Risk2Safe RA Studio — Powered by EI 3580 & 6×6 Matrix</div></div>';
   h+='<h1>1. Task Description</h1><p>'+esc(s.description||'—')+'</p>';
   h+='<h1>2. Risk Register</h1><table><thead><tr><th>#</th><th>Step</th><th>Energy</th><th>Hazard</th><th>Initial Risk</th><th>Controls</th><th>Residual Risk</th></tr></thead><tbody>';
   var row=1;
@@ -1984,7 +1984,7 @@ function buildReportHTML(){
   h+='<h1>3. Error-Producing Conditions</h1><table><thead><tr><th>Step</th><th>Category</th><th>EPC</th><th>Description</th><th>Control</th></tr></thead><tbody>';
   s.steps.forEach(function(st){(st.epcs||[]).forEach(function(ep){var cat=EPC_DATA[ep.category]||EPC_DATA.job;h+='<tr><td>'+esc(st.description)+'</td><td>'+cat.label+'</td><td>'+esc(ep.epcType)+'</td><td>'+esc(ep.description)+'</td><td>'+esc(ep.control||'—')+'</td></tr>';});});
   h+='</tbody></table>';
-  h+='<div class="footer">Generated by Risk2Safe RA Studio on '+dateStr+' — EI 3580 methodology / ADNOC 6×6 Risk Matrix</div></body></html>';
+  h+='<div class="footer">Generated by Risk2Safe RA Studio on '+dateStr+' — EI 3580 methodology / 6×6 Risk Matrix</div></body></html>';
   return h;
 }
 
