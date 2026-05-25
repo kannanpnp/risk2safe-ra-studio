@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Risk2Safe RA Studio — Manual Version</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#0a0e1a;--bg-card:#111827;--bg-card2:#1a2235;
+  --text:#e8edf5;--muted:#7a8fa8;--border:#243050;
+  --accent:#00b4d8;--accent2:#0ea5e9;
+  --green:#10b981;--green-lt:#34d399;--green-dk:#065f46;
+  --orange:#f59e0b;--orange-lt:#fcd34d;
+  --red:#dc2626;--red-lt:#fca5a5;--red-dk:#7f1d1d;
+  --purple:#7c3aed;--blue:#2563eb;
+  --elim:#10b981;--subs:#0ea5e9;--eng:#7c3aed;
+  --adm:#f59e0b;--ppe:#e74c3c;
+  --risk-red:#dc2626;--risk-hm:#f59e0b;--risk-med:#eab308;--risk-low:#10b981;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* HEADER */
+header{background:linear-gradient(135deg,#0d1f3c,#112244,#0a1628);border-bottom:2px solid var(--accent);padding:14px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.logo svg{width:38px;height:24px}
+header h1{font-family:'Rajdhani',sans-serif;font-size:1.35rem;font-weight:700;letter-spacing:.05em}
+header h1 span{color:var(--accent)}
+.hdr-sub{font-size:.68rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-left:auto}
+.hdr-badge{background:linear-gradient(135deg,rgba(0,180,216,.15),rgba(14,165,233,.1));border:1px solid rgba(0,180,216,.3);padding:3px 10px;border-radius:12px;font-size:.65rem;color:var(--accent);font-weight:600;letter-spacing:.05em}
+
+/* LAYOUT */
+.app{display:flex;height:calc(100vh - 60px)}
+
+/* SIDEBAR */
+.sidebar{width:320px;background:var(--bg-card);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* NAV */
+.s-nav{padding:10px 12px;border-bottom:1px solid var(--border)}
+.nav-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:6px;background:transparent;border:none;color:var(--muted);font-family:'IBM Plex Sans',sans-serif;font-size:.77rem;cursor:pointer;transition:all .15s;text-align:left;margin-bottom:2px}
+.nav-btn:hover{background:var(--bg-card2);color:var(--text)}
+.nav-btn.active{background:rgba(0,180,216,.1);color:var(--accent);border-left:3px solid var(--accent)}
+.nav-btn .nav-icon{font-size:.85rem;width:18px;text-align:center}
+.nav-btn .nav-label{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.04em;font-size:.82rem}
+.nav-btn .nav-count{margin-left:auto;background:var(--bg-card2);padding:1px 6px;border-radius:8px;font-size:.6rem;font-weight:700}
+
+/* SECTION LABELS */
+.s-sec{border-bottom:1px solid var(--border);padding:12px 14px}
+.s-lbl{font-family:'Rajdhani',sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+label{display:block;font-size:.74rem;color:var(--muted);margin-bottom:3px;font-weight:500}
+input[type=text],input[type=date],textarea,select{width:100%;background:var(--bg-card2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:.78rem;padding:6px 8px;outline:none;transition:border-color .2s}
+input[type=text]:focus,input[type=date]:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,180,216,.1)}
+textarea{resize:vertical;min-height:55px;line-height:1.4}
+select{cursor:pointer}
+.mt{margin-top:7px}
+.mt2{margin-top:12px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:5px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.04em;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--accent);color:#0a0e1a}
+.btn-primary:hover{background:#00d0f8}
+.btn-green{background:var(--green);color:#0a0e1a}
+.btn-green:hover{background:var(--green-lt)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--bg-card2);color:var(--text)}
+.btn-danger{background:rgba(220,38,38,.15);color:var(--red);border:1px solid rgba(220,38,38,.3)}
+.btn-danger:hover{background:rgba(220,38,38,.25)}
+.btn-orange{background:var(--orange);color:#0a0e1a}
+.btn-orange:hover{background:var(--orange-lt)}
+.btn-sm{padding:4px 8px;font-size:.7rem}
+.btn-group{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.rule{background:linear-gradient(90deg,rgba(0,180,216,.07),transparent);border-left:2px solid var(--accent);padding:5px 9px;font-size:.69rem;color:var(--muted);line-height:1.5;margin-top:7px;border-radius:0 4px 4px 0}
+.rule strong{color:var(--accent)}
+.add-link{font-size:.73rem;color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;gap:3px;background:none;border:none;padding:0;font-family:'IBM Plex Sans',sans-serif;margin-top:5px}
+.add-link:hover{text-decoration:underline}
+
+/* AI PANEL */
+.ai-panel{background:linear-gradient(135deg,#0d1f3c,#0a2040);border:1px solid #1e4080;border-radius:7px;padding:10px 12px;margin-top:8px}
+.ai-title{font-family:'Rajdhani',sans-serif;font-size:.76rem;font-weight:700;color:var(--accent);letter-spacing:.08em;display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.ai-status{font-size:.71rem;color:var(--muted);margin-bottom:6px;line-height:1.4}
+.suggestions{display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto;margin-top:8px}
+.suggestions::-webkit-scrollbar{width:3px}
+.suggestions::-webkit-scrollbar-thumb{background:#1e4080;border-radius:2px}
+.chip{background:rgba(0,180,216,.07);border:1px solid rgba(0,180,216,.18);border-radius:5px;padding:6px 8px;font-size:.72rem;color:var(--text);cursor:pointer;transition:all .15s;line-height:1.4}
+.chip:hover{background:rgba(0,180,216,.16);border-color:var(--accent)}
+.chip-label{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:2px;color:var(--accent)}
+.dots{display:inline-flex;gap:4px;align-items:center}
+.dots span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:db 1.2s ease-in-out infinite}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes db{0%,80%,100%{transform:scale(.6);opacity:.5}40%{transform:scale(1);opacity:1}}
+.key-status{display:inline-block;font-size:.6rem;padding:1px 6px;border-radius:3px;margin-left:6px;font-weight:600;letter-spacing:.04em}
+.key-set{background:rgba(16,185,129,.15);color:#6edba0;border:1px solid #1a5c3a}
+.key-unset{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid #7b1010}
+.key-btn-row{display:flex;gap:5px;margin-top:6px}
+.key-btn{font-size:.66rem;padding:3px 8px;border-radius:4px;cursor:pointer;border:none;font-family:'IBM Plex Sans',sans-serif}
+.key-btn-set{background:var(--accent);color:#0a0e1a;font-weight:600}
+.key-btn-set:hover{background:#00d0f8}
+.key-btn-clear{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.key-btn-clear:hover{background:var(--bg-card2);color:var(--text)}
+
+/* CANVAS */
+.canvas{flex:1;overflow:auto;background:radial-gradient(ellipse at 20% 30%,rgba(0,180,216,.06),transparent 50%),radial-gradient(ellipse at 80% 70%,rgba(16,185,129,.05),transparent 50%),var(--bg);padding:24px;display:flex;flex-direction:column}
+.canvas::-webkit-scrollbar{width:6px}
+.canvas::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* SECTION HEADER */
+.sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.sec-hdr-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.sec-hdr-title{font-family:'Rajdhani',sans-serif;font-size:1.4rem;font-weight:700;letter-spacing:.04em}
+.sec-hdr-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+.sec-hdr-actions{margin-left:auto;display:flex;gap:8px}
+
+/* CARDS */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:9px;padding:16px 18px;margin-bottom:12px;transition:all .15s}
+.card:hover{border-color:rgba(0,180,216,.3)}
+.card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.card-title{font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.04em}
+.card-sub{font-size:.72rem;color:var(--muted);margin-top:1px}
+
+/* STEP CARDS */
+.step-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;transition:all .15s;cursor:pointer}
+.step-card:hover{border-color:rgba(0,180,216,.4);box-shadow:0 2px 12px rgba(0,180,216,.08)}
+.step-card-hdr{padding:12px 16px;display:flex;align-items:center;gap:10px}
+.step-num{width:28px;height:28px;border-radius:50%;background:rgba(0,180,216,.15);border:1.5px solid rgba(0,180,216,.4);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.8rem;color:var(--accent);flex-shrink:0}
+.step-desc{font-size:.82rem;font-weight:500;flex:1;line-height:1.3}
+.step-meta{font-size:.66rem;color:var(--muted);margin-top:2px}
+.step-badges{display:flex;gap:5px;align-items:center;margin-left:auto}
+.step-badge{padding:2px 7px;border-radius:10px;font-size:.62rem;font-weight:700}
+
+/* RISK MATRIX DISPLAY */
+.risk-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:.68rem;font-weight:700;letter-spacing:.04em}
+.risk-chip.RED{background:rgba(220,38,38,.2);color:#fca5a5;border:1px solid rgba(220,38,38,.4)}
+.risk-chip.HIGH_MED{background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.4)}
+.risk-chip.MEDIUM{background:rgba(234,179,8,.2);color:#fef08a;border:1px solid rgba(234,179,8,.4)}
+.risk-chip.LOW{background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.4)}
+.risk-chip.UNRATED{background:rgba(120,148,170,.1);color:var(--muted);border:1px solid var(--border)}
+
+/* MATRIX GRID */
+.matrix-grid{display:grid;grid-template-columns:80px repeat(6,1fr);gap:2px;font-size:.65rem}
+.matrix-cell{padding:6px 4px;text-align:center;border-radius:3px;cursor:pointer;transition:all .12s;font-weight:700;font-size:.62rem;line-height:1.2}
+.matrix-cell:hover{transform:scale(1.1);z-index:1;position:relative}
+.matrix-cell.selected{outline:3px solid #fff;z-index:2;position:relative;transform:scale(1.05)}
+.matrix-hdr{background:var(--bg-card2);border-radius:3px;padding:5px 3px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.6rem;color:var(--muted);letter-spacing:.05em}
+.matrix-row-lbl{background:var(--bg-card2);border-radius:3px;padding:4px 6px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.6rem;color:var(--muted);display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+.matrix-row-lbl span{color:var(--text);font-size:.58rem}
+.cell-RED{background:rgba(127,29,29,.85);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.cell-RED:hover{background:#7f1d1d}
+.cell-HIGH_MED{background:rgba(120,53,15,.85);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+.cell-HIGH_MED:hover{background:#78350f}
+.cell-MEDIUM{background:rgba(113,63,18,.7);color:#fef08a;border:1px solid rgba(234,179,8,.3)}
+.cell-MEDIUM:hover{background:#713f12}
+.cell-LOW{background:rgba(6,78,59,.7);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
+.cell-LOW:hover{background:#064e3b}
+
+/* ENERGY SOURCE GRID */
+.energy-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+.energy-item{background:var(--bg-card2);border:1.5px solid var(--border);border-radius:6px;padding:8px 5px;text-align:center;cursor:pointer;transition:all .15s}
+.energy-item:hover{border-color:var(--accent);background:rgba(0,180,216,.06)}
+.energy-item.selected{border-color:var(--accent);background:rgba(0,180,216,.12);box-shadow:0 0 8px rgba(0,180,216,.2)}
+.energy-icon{font-size:1.2rem;display:block;margin-bottom:3px}
+.energy-name{font-size:.6rem;font-weight:600;color:var(--muted)}
+.energy-item.selected .energy-name{color:var(--accent)}
+
+/* HIERARCHY CONTROLS */
+.hierarchy-bar{display:flex;gap:0;margin:8px 0;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+.hier-btn{flex:1;padding:6px 4px;text-align:center;cursor:pointer;transition:all .15s;border:none;background:var(--bg-card2);font-family:'Rajdhani',sans-serif;font-size:.6rem;font-weight:700;letter-spacing:.04em;color:var(--muted);border-right:1px solid var(--border)}
+.hier-btn:last-child{border-right:none}
+.hier-btn:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.hier-btn.active-elim{background:rgba(16,185,129,.2);color:var(--elim)}
+.hier-btn.active-subs{background:rgba(14,165,233,.2);color:var(--subs)}
+.hier-btn.active-eng{background:rgba(124,58,237,.2);color:var(--eng)}
+.hier-btn.active-adm{background:rgba(245,158,11,.2);color:var(--adm)}
+.hier-btn.active-ppe{background:rgba(231,76,60,.2);color:var(--ppe)}
+
+/* EPC CATEGORIES */
+.epc-cat{border-radius:6px;margin-bottom:8px;overflow:hidden}
+.epc-cat-hdr{padding:8px 12px;font-family:'Rajdhani',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.06em;cursor:pointer;display:flex;align-items:center;gap:6px}
+.epc-cat-hdr.job{background:rgba(236,72,153,.15);color:#f472b6;border:1px solid rgba(236,72,153,.2)}
+.epc-cat-hdr.person{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.2)}
+.epc-cat-hdr.org{background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.2)}
+.epc-items{background:var(--bg-card2);padding:6px 8px;display:flex;flex-wrap:wrap;gap:4px}
+.epc-tag{padding:3px 7px;border-radius:4px;font-size:.64rem;font-weight:600;cursor:pointer;transition:all .12s;border:1px solid transparent}
+.epc-tag.job-tag{background:rgba(236,72,153,.08);color:#f472b6;border-color:rgba(236,72,153,.2)}
+.epc-tag.job-tag:hover,.epc-tag.job-tag.sel{background:rgba(236,72,153,.2);border-color:#ec4899}
+.epc-tag.person-tag{background:rgba(16,185,129,.08);color:#34d399;border-color:rgba(16,185,129,.2)}
+.epc-tag.person-tag:hover,.epc-tag.person-tag.sel{background:rgba(16,185,129,.2);border-color:var(--green)}
+.epc-tag.org-tag{background:rgba(59,130,246,.08);color:#60a5fa;border-color:rgba(59,130,246,.2)}
+.epc-tag.org-tag:hover,.epc-tag.org-tag.sel{background:rgba(59,130,246,.2);border-color:#3b82f6}
+
+/* CONTROL ITEM */
+.ctrl-item{background:var(--bg-card2);border:1px solid var(--border);border-radius:5px;padding:7px 10px;margin-bottom:5px;display:flex;align-items:flex-start;gap:8px}
+.ctrl-type-badge{flex-shrink:0;padding:2px 7px;border-radius:4px;font-size:.6rem;font-weight:700;letter-spacing:.04em}
+.ctrl-elim{background:rgba(16,185,129,.2);color:var(--elim);border:1px solid rgba(16,185,129,.3)}
+.ctrl-subs{background:rgba(14,165,233,.2);color:var(--subs);border:1px solid rgba(14,165,233,.3)}
+.ctrl-eng{background:rgba(124,58,237,.2);color:var(--eng);border:1px solid rgba(124,58,237,.3)}
+.ctrl-adm{background:rgba(245,158,11,.2);color:var(--adm);border:1px solid rgba(245,158,11,.3)}
+.ctrl-ppe{background:rgba(231,76,60,.2);color:var(--ppe);border:1px solid rgba(231,76,60,.3)}
+.ctrl-epc{background:rgba(0,180,216,.15);color:var(--accent);border:1px solid rgba(0,180,216,.3)}
+.ctrl-text{font-size:.76rem;flex:1;line-height:1.4}
+.ctrl-rm{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.8rem;padding:0 3px;opacity:0;transition:opacity .15s}
+.ctrl-item:hover .ctrl-rm{opacity:1}
+.ctrl-rm:hover{color:var(--red)}
+
+/* HAZARD BLOCK */
+.hazard-block{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;overflow:hidden}
+.hazard-block-hdr{padding:10px 14px;display:flex;align-items:center;gap:8px;background:var(--bg-card2);border-bottom:1px solid var(--border)}
+.energy-badge{padding:2px 8px;border-radius:4px;font-size:.62rem;font-weight:700;letter-spacing:.05em}
+.hazard-block-body{padding:14px}
+.hazard-block-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.risk-picker-btn{background:var(--bg-card2);border:1px solid var(--border);border-radius:5px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s;width:100%}
+.risk-picker-btn:hover{border-color:var(--accent)}
+.risk-picker-label{font-size:.65rem;color:var(--muted);display:block;margin-bottom:3px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.risk-arrow{margin:0 auto;text-align:center;color:var(--green);font-size:1.1rem;padding:8px 0}
+
+/* EPC LIST in hazard block */
+.epc-block{background:rgba(0,180,216,.04);border:1px solid rgba(0,180,216,.15);border-radius:6px;padding:10px 12px;margin-top:10px}
+.epc-block-title{font-family:'Rajdhani',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.1em;color:var(--accent);margin-bottom:7px;text-transform:uppercase}
+.epc-list-item{background:var(--bg-card2);border-radius:4px;padding:5px 8px;margin-bottom:4px;font-size:.72rem;display:flex;align-items:flex-start;gap:6px}
+.epc-category-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+
+/* KPI STATS */
+.kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.kpi-card{flex:1;min-width:100px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;text-align:center}
+.kpi-num{font-family:'Rajdhani',sans-serif;font-size:1.6rem;font-weight:700;color:var(--accent);display:block}
+.kpi-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+
+/* FRONTLINE TOOL CARDS */
+.tool-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.tool-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tool-num{width:24px;height:24px;border-radius:50%;background:rgba(0,180,216,.15);border:1.5px solid rgba(0,180,216,.4);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.72rem;color:var(--accent);flex-shrink:0}
+.tool-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.9rem;letter-spacing:.04em}
+.tool-timing{padding:2px 7px;border-radius:10px;font-size:.6rem;font-weight:700;margin-left:auto}
+.timing-before{background:rgba(14,165,233,.2);color:#60a5fa;border:1px solid rgba(14,165,233,.3)}
+.timing-during{background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+.timing-after{background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
+.tool-desc{font-size:.76rem;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.tool-steps{background:var(--bg-card2);border-radius:5px;padding:8px 10px}
+.tool-step{font-size:.72rem;color:var(--text);padding:2px 0;display:flex;gap:8px;line-height:1.4}
+.tool-step-n{font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--accent);flex-shrink:0;min-width:14px}
+.checklist-item{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:4px;cursor:pointer;transition:all .1s;margin-bottom:2px}
+.checklist-item:hover{background:var(--bg-card2)}
+.checklist-item input[type=checkbox]{accent-color:var(--accent);cursor:pointer;margin-top:2px;flex-shrink:0}
+.checklist-item label{font-size:.74rem;color:var(--text);cursor:pointer;line-height:1.4}
+.flag-yes{background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3)}
+.flag-no{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2)}
+
+/* SUMMARY */
+.summary-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:5px;background:var(--bg-card2);margin-bottom:5px;font-size:.76rem}
+.summary-step-n{font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--accent);min-width:20px}
+.summary-step-desc{flex:1;color:var(--text);font-size:.74rem}
+.summary-step-meta{color:var(--muted);font-size:.66rem}
+
+/* REGISTER TABLE */
+.reg-table{width:100%;border-collapse:collapse;font-size:.72rem;margin-top:8px}
+.reg-table th{background:var(--bg-card2);color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:7px 10px;text-align:left;border:1px solid var(--border);font-size:.62rem}
+.reg-table td{padding:6px 10px;border:1px solid var(--border);color:var(--text);vertical-align:top;line-height:1.4}
+.reg-table tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:1000;justify-content:center;align-items:center}
+.modal-overlay.active{display:flex}
+.modal-box{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:22px 24px;max-width:500px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:90vh;overflow-y:auto}
+.modal-box::-webkit-scrollbar{width:4px}
+.modal-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.modal-box.wide{max-width:680px}
+.modal-box.xlwide{max-width:840px}
+.modal-title{font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:.05em;margin-bottom:5px}
+.modal-sub{font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.modal-input{width:100%;background:var(--bg-card2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:.78rem;padding:9px 11px;outline:none;margin-bottom:6px}
+.modal-input:focus{border-color:var(--accent)}
+.modal-hint{font-size:.7rem;color:var(--muted);margin-bottom:14px;line-height:1.5}
+.modal-hint a{color:var(--accent);text-decoration:none}
+.modal-hint a:hover{text-decoration:underline}
+.modal-privacy{background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.25);border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:.7rem;color:var(--muted);line-height:1.6}
+.modal-privacy strong{color:#6edba0}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.modal-btn{padding:7px 16px;border-radius:5px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.82rem;letter-spacing:.04em;cursor:pointer;border:none}
+.modal-btn-primary{background:var(--accent);color:#0a0e1a}
+.modal-btn-primary:hover{background:#00d0f8}
+.modal-btn-secondary{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.modal-btn-secondary:hover{background:var(--bg-card2);color:var(--text)}
+
+/* RISK MATRIX MODAL */
+.matrix-modal-box{max-width:700px}
+.severity-desc{font-size:.66rem;color:var(--muted);line-height:1.3}
+.likelihood-col-hdr{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.62rem;color:var(--muted);text-align:center}
+
+/* INFO BAR */
+.info-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(10,14,26,.96);border-top:1px solid var(--border);padding:5px 18px;display:flex;gap:12px;align-items:center;font-size:.7rem;color:var(--muted);backdrop-filter:blur(10px);z-index:50;flex-wrap:wrap}
+.bdg{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-weight:700;font-size:.63rem}
+.bdg-blue{background:rgba(37,99,235,.2);color:#60a5fa;border:1px solid rgba(37,99,235,.3)}
+.bdg-green{background:rgba(16,185,129,.15);color:#6edba0;border:1px solid rgba(16,185,129,.3)}
+.bdg-orange{background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+.bdg-red{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.bdg-muted{background:rgba(120,148,170,.1);color:var(--muted);border:1px solid var(--border)}
+
+/* EMPTY STATES */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-state-icon{font-size:2.5rem;margin-bottom:10px;opacity:.4;display:block}
+.empty-state-title{font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;margin-bottom:5px;color:var(--muted)}
+.empty-state-sub{font-size:.76rem;line-height:1.5;margin-bottom:16px}
+
+/* WHEEL VISUAL */
+.wheel-container{position:relative;width:320px;height:320px;margin:0 auto}
+.wheel-ring{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.wheel-label{position:absolute;font-size:.6rem;font-weight:600;text-align:center;pointer-events:none}
+
+/* DASHBOARD */
+.db-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.db-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.db-card-icon{font-size:1.5rem;margin-bottom:8px;display:block}
+.db-card-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.9rem;letter-spacing:.04em;margin-bottom:5px}
+.db-card-sub{font-size:.72rem;color:var(--muted);line-height:1.5}
+.db-card-action{margin-top:10px}
+.db-hero{background:linear-gradient(135deg,#0d1f3c,#0a1628);border:1px solid var(--accent);border-radius:12px;padding:24px;margin-bottom:16px;text-align:center}
+.db-hero-title{font-family:'Rajdhani',sans-serif;font-size:1.8rem;font-weight:700;letter-spacing:.08em;margin-bottom:6px}
+.db-hero-title span{color:var(--accent)}
+.db-hero-sub{color:var(--muted);font-size:.82rem;line-height:1.6;max-width:560px;margin:0 auto 16px}
+
+/* PROGRESS BAR */
+.progress-bar{background:var(--bg-card2);border-radius:20px;height:6px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--accent));border-radius:20px;transition:width .4s ease}
+
+/* HOVER EFFECTS */
+.hoverable{transition:all .15s;cursor:pointer}
+.hoverable:hover{transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,.2)}
+
+/* SECTION DIVIDER */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:16px 0}
+
+/* TOOLTIP */
+.tooltip{position:relative;cursor:help}
+.tooltip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#1e2d45;border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:4px;font-size:.65rem;white-space:nowrap;z-index:100;pointer-events:none}
+
+@media print{
+  @page{size:A4;margin:15mm}
+  header,.sidebar,.info-bar,.btn,.btn-group{display:none!important}
+  .app{display:block!important;height:auto!important}
+  .canvas{display:block!important;overflow:visible!important;height:auto!important;width:100%!important;padding:0!important;background:#fff!important}
+  body{background:#fff!important;color:#000!important}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.js"></script>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 44 28" fill="none">
+      <polygon points="2,14 16,4 22,14 16,24" fill="#1a3a6b" stroke="#2a5298" stroke-width="1.5"/>
+      <polygon points="42,14 28,4 22,14 28,24" fill="#065f46" stroke="#10b981" stroke-width="1.5"/>
+      <circle cx="22" cy="14" r="4" fill="#10b981"/>
+      <circle cx="22" cy="14" r="2" fill="#6ee7b7"/>
+    </svg>
+  </div>
+  <h1>Risk<span>2</span>Safe RA Studio</h1>
+  <span class="hdr-badge" style="background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:#34d399">Manual Mode — No AI Required</span>
+  <div class="hdr-sub">EI 3580 Methodology &nbsp;|&nbsp; ADNOC 6×6 Matrix &nbsp;|&nbsp; AI-Assisted &nbsp;|&nbsp; <a href="index.html" style="color:var(--green);text-decoration:none;border-bottom:1px dotted var(--green)">📋 Switch to Manual Mode →</a></div>
+</header>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="s-nav" id="sideNav"></div>
+    <div id="sideContent"></div>
+  </aside>
+
+  <!-- MAIN CANVAS -->
+  <main class="canvas" id="mainCanvas" style="padding-bottom:80px">
+    <div id="viewContainer"></div>
+  </main>
+</div>
+
+<div class="info-bar" id="infoBar">
+  <span style="font-weight:600;color:#9ab4c8">Risk2Safe RA Studio</span>
+  <span class="bdg bdg-blue" id="ib-steps">0 Steps</span>
+  <span class="bdg bdg-orange" id="ib-hazards">0 Hazards</span>
+  <span class="bdg bdg-red" id="ib-red">0 RED risks</span>
+  <span class="bdg bdg-muted" id="ib-epcs">0 EPCs</span>
+  <span class="bdg bdg-green" id="ib-controls">0 Controls</span>
+  <span style="margin-left:auto;font-size:.65rem" id="ib-assess"></span>
+</div>
+
+<!-- RISK PICKER MODAL -->
+<div class="modal-overlay" id="riskModal">
+  <div class="modal-box wide matrix-modal-box">
+    <div class="modal-title" id="riskModalTitle">Select Risk Level</div>
+    <div class="modal-sub" style="margin-bottom:10px">Click a cell on the 6×6 ADNOC Corporate Risk Matrix to select Severity and Likelihood. Hover any cell for descriptions.</div>
+    <div id="riskMatrixGrid"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <span class="risk-chip RED" style="font-size:.65rem">● RED — Intolerable: Reduce ALARP immediately</span>
+      <span class="risk-chip HIGH_MED" style="font-size:.65rem">● HIGH-MED — Should reduce ALARP</span>
+      <span class="risk-chip MEDIUM" style="font-size:.65rem">● MEDIUM — Monitor & improve controls</span>
+      <span class="risk-chip LOW" style="font-size:.65rem">● LOW — Acceptable, monitor</span>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-secondary" onclick="closeModal('riskModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD HAZARD MODAL -->
+<div class="modal-overlay" id="hazardModal">
+  <div class="modal-box wide">
+    <div class="modal-title">⚡ Add / Edit Hazard</div>
+    <div class="modal-sub">Select the energy source and describe the hazard this energy can cause.</div>
+    <div class="s-lbl" style="margin-bottom:6px">Energy Source</div>
+    <div class="energy-grid" id="modalEnergyGrid"></div>
+    <div style="margin-top:10px">
+      <label>Hazard Description</label>
+      <textarea id="hzDesc" placeholder="Describe how the energy source creates a specific harm e.g. 'Arc flash from live 11kV busbar causing severe burns'"></textarea>
+    </div>
+    <div id="hzAiSuggest" style="margin-top:8px">
+      <button class="btn btn-ghost btn-sm" onclick="aiSuggestHazards()">⚡ AI Suggest Hazards for Selected Energy</button>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-secondary" onclick="closeModal('hazardModal')">Cancel</button>
+      <button class="modal-btn modal-btn-primary" onclick="saveHazard()">Add Hazard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CONTROL MODAL -->
+<div class="modal-overlay" id="ctrlModal">
+  <div class="modal-box">
+    <div class="modal-title">🛡 Add Control Measure</div>
+    <div class="modal-sub">Select the control type from the hierarchy of controls. Higher order controls are more effective and preferred.</div>
+    <div class="hierarchy-bar" id="ctrlTypeBar"></div>
+    <div id="ctrlTypeHint" style="font-size:.7rem;color:var(--muted);margin-bottom:8px;padding:5px 8px;background:var(--bg-card2);border-radius:4px;min-height:28px"></div>
+    <label>Control Description</label>
+    <textarea id="ctrlDesc" placeholder="Describe the specific control measure in detail"></textarea>
+    <div id="ctrlAiSuggest" style="margin-top:8px">
+      <button class="btn btn-ghost btn-sm" onclick="aiSuggestControls()">⚡ AI Suggest Controls for this Hazard</button>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-secondary" onclick="closeModal('ctrlModal')">Cancel</button>
+      <button class="modal-btn modal-btn-primary" onclick="saveControl()">Add Control</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI FULL STEP MODAL -->
+<div class="modal-overlay" id="aiStepModal">
+  <div class="modal-box xlwide">
+    <div class="modal-title">⚡ AI Full Step Analysis</div>
+    <div class="modal-sub" id="aiStepModalSub"></div>
+    <div id="aiStepModalBody">
+      <div style="text-align:center;padding:30px"><div class="dots"><span></span><span></span><span></span></div><p style="color:var(--muted);margin-top:10px;font-size:.78rem">Analysing step...</p></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-secondary" onclick="closeModal('aiStepModal')">Close</button>
+      <button class="modal-btn modal-btn-primary" id="aiApplyBtn" onclick="applyAIAnalysis()" style="display:none">Apply to Step</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// RISK2SAFE RA STUDIO — Full Application JavaScript
+// EI 3580 Task-Based Risk Assessment + ADNOC 6×6 Matrix
+// ════════════════════════════════════════════════════════════
+
+// ── DATA DEFINITIONS ─────────────────────────────────────────
+var ENERGY_SOURCES = [
+  {id:'gravity',name:'Gravity',icon:'⬇',color:'#ef4444',badge:'bg:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.3)',
+   hazards:['Person falls from height','Falling tools or equipment','Collapse of structure or scaffolding','Slip, trip or fall on same level','Dropped load during lifting','Falling debris or objects','Unstable stored materials','Collapse of excavation face']},
+  {id:'motion',name:'Motion',icon:'↔',color:'#f97316',badge:'bg:rgba(249,115,22,.2);color:#fed7aa;border:1px solid rgba(249,115,22,.3)',
+   hazards:['Struck by moving vehicle or plant','Person caught in/between moving parts','Crush injury at pinch points','Manual handling — musculoskeletal injury','Projectile ejection from operations','Wind loading on elevated load','Whipping rope, cable or hose','Collision with fixed structure']},
+  {id:'mechanical',name:'Mechanical',icon:'⚙',color:'#8b5cf6',badge:'bg:rgba(139,92,246,.2);color:#c4b5fd;border:1px solid rgba(139,92,246,.3)',
+   hazards:['Entanglement in rotating machinery','Caught in conveyor or belt drive','Ejection of parts from machinery','Cutting or shearing from moving parts','Vibration injury from powered tools','Unexpected machine start-up','Contact with drilling equipment','Hydraulic power tool failure']},
+  {id:'electrical',name:'Electrical',icon:'⚡',color:'#eab308',badge:'bg:rgba(234,179,8,.2);color:#fef08a;border:1px solid rgba(234,179,8,.3)',
+   hazards:['Electric shock from live conductors','Arc flash or arc blast during switching','Electrical fire from fault or overload','Static discharge causing ignition','Contact with overhead power lines','Burns from electrical equipment','Induced voltage from proximity','Short circuit causing explosion']},
+  {id:'pressure',name:'Pressure',icon:'🔴',color:'#10b981',badge:'bg:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)',
+   hazards:['High-pressure fluid injection injury','Vessel or pipeline rupture','Whipping hose from failed fitting','Overpressure causing catastrophic failure','Vacuum collapse of vessel or tank','Pneumatic tool ejection','Blowout during well operations','Pressure surge water hammer']},
+  {id:'temperature',name:'Temp.',icon:'🌡',color:'#dc2626',badge:'bg:rgba(220,38,38,.2);color:#fca5a5;border:1px solid rgba(220,38,38,.3)',
+   hazards:['Burns from hot surfaces or process fluids','Flash fire from ignition of vapour','Cold burns or frostbite from cryogenics','Steam burn from pressurised lines','Heat stress or heat stroke','Hypothermia in cold environments','Contact with molten material','Fire from hot work operations']},
+  {id:'chemical',name:'Chemical',icon:'☣',color:'#22c55e',badge:'bg:rgba(34,197,94,.2);color:#86efac;border:1px solid rgba(34,197,94,.3)',
+   hazards:['Inhalation of toxic vapours or fumes','Skin contact with corrosive substance','Chemical splash to eyes','Asphyxiation in confined space','Explosion from flammable vapour cloud','Chemical sensitisation from repeated exposure','H2S exposure — acute or chronic','Fire from spontaneous reaction']},
+  {id:'biological',name:'Biological',icon:'🦠',color:'#06b6d4',badge:'bg:rgba(6,182,212,.2);color:#67e8f9;border:1px solid rgba(6,182,212,.3)',
+   hazards:['Infection from contaminated water or waste','Animal or insect bite or sting','Exposure to airborne pathogens','Contact with sewage or biological waste','Legionella from water systems','H2S biological exposure effects','Food poisoning at remote location','Leptospirosis from flooded areas']},
+  {id:'radiation',name:'Radiation',icon:'☢',color:'#a855f7',badge:'bg:rgba(168,85,247,.2);color:#d8b4fe;border:1px solid rgba(168,85,247,.3)',
+   hazards:['UV radiation from welding arc','Eye damage from laser or arc flash','Ionising radiation from industrial sources','NORM (naturally occurring radioactive material) exposure','RF or microwave radiation burns','Infrared burns from hot processes','Excessive UV from sun exposure','X-ray source exposure']},
+  {id:'sound',name:'Sound',icon:'🔊',color:'#3b82f6',badge:'bg:rgba(59,130,246,.2);color:#93c5fd;border:1px solid rgba(59,130,246,.3)',
+   hazards:['Noise-induced hearing loss from equipment','Hand-arm vibration syndrome (HAVS)','Whole-body vibration effects','Acoustic shock from pressure relief','Communication failure from noise','Infrasound from machinery affecting health','Startle response causing accident','Stress from chronic noise exposure']}
+];
+
+var EPC_DATA = {
+  job:{
+    label:'Job Factors',cat:'job',tagClass:'job-tag',color:'#f472b6',dotColor:'#ec4899',
+    items:[
+      {id:'info',name:'Information','desc':'Unclear signs, labels, instructions or task information'},
+      {id:'equipment',name:'Equipment Interface',desc:'Poor design, labelling, alarms, error intolerance in equipment'},
+      {id:'complexity',name:'Task Complexity',desc:'High difficulty, complex multi-step process, cognitive overload'},
+      {id:'routine',name:'Routine / Unusual',desc:'Unfamiliar task (error risk) or overly routine (complacency)'},
+      {id:'attention',name:'Divided Attention',desc:'Multi-tasking, interruptions, distractions during critical steps'},
+      {id:'procedures',name:'Procedures',desc:'Procedures absent, inadequate, incorrect or hard to use in field'},
+      {id:'preparation',name:'Preparation',desc:'Permits, risk assessments, isolation checks not properly done'},
+      {id:'time',name:'Time Pressure',desc:'Insufficient time available to complete task safely'},
+      {id:'tools',name:'Tools / Equipment',desc:'Wrong tools, uncalibrated instruments, unavailable equipment'},
+      {id:'comms',name:'Communication',desc:'Language barriers, poor radio coverage, shift handover gaps'},
+      {id:'environment',name:'Work Environment',desc:'Noise, heat, cold, poor lighting, confined space, vibration'}
+    ]
+  },
+  person:{
+    label:'Person Factors',cat:'person',tagClass:'person-tag',color:'#34d399',dotColor:'#10b981',
+    items:[
+      {id:'physical',name:'Physical Capability',desc:'Fitness, strength, reach, height, medical condition'},
+      {id:'fatigue',name:'Fatigue',desc:'Acute (shift, travel) or chronic fatigue reducing alertness and performance'},
+      {id:'stress',name:'Stress / Morale',desc:'High stress, poor morale, personal problems affecting judgement'},
+      {id:'workload',name:'Workload',desc:'Work overload or underload (boredom / complacency)'},
+      {id:'training',name:'Training / Competence',desc:'Lack of training or competence for specific task circumstances'},
+      {id:'dilemmas',name:'Dilemmas',desc:'Conflicting priorities, peer pressure, safety culture pressures'}
+    ]
+  },
+  org:{
+    label:'Organisation Factors',cat:'org',tagClass:'org-tag',color:'#60a5fa',dotColor:'#3b82f6',
+    items:[
+      {id:'production',name:'Production vs Safety',desc:'Time or production targets conflicting with safe working pace'},
+      {id:'supervision',name:'Supervision',desc:'Inadequate level or quality of supervision or leadership'},
+      {id:'staffing',name:'Staffing Levels',desc:'Insufficient staff to safely execute the task'},
+      {id:'roles',name:'Unclear Roles',desc:'Confusion about responsibilities, who is in charge, scope of work'}
+    ]
+  }
+};
+
+var CONTROL_TYPES = [
+  {id:'elimination',label:'Eliminate',abbrev:'ELIM',desc:'Physically remove the hazard or error-producing condition. Most effective — do not perform the task.',cls:'ctrl-elim',hier:'active-elim',color:'#10b981'},
+  {id:'substitution',label:'Substitute',abbrev:'SUBS',desc:'Replace the hazard with something less dangerous, or automate to remove human involvement.',cls:'ctrl-subs',hier:'active-subs',color:'#0ea5e9'},
+  {id:'engineering',label:'Engineering',abbrev:'ENG',desc:'Physical barriers, guards, interlocks, forcing functions, lockouts, better design. Reliable, independent of human behaviour.',cls:'ctrl-eng',hier:'active-eng',color:'#7c3aed'},
+  {id:'administrative',label:'Admin / Proc',abbrev:'ADM',desc:'Procedures, training, supervision, PTW, permit, task re-design, double-checks, scheduling. Relies on human compliance.',cls:'ctrl-adm',hier:'active-adm',color:'#f59e0b'},
+  {id:'ppe',label:'PPE',abbrev:'PPE',desc:'Personal protective equipment — last resort. Does not prevent hazard, only mitigates consequence. Least effective.',cls:'ctrl-ppe',hier:'active-ppe',color:'#e74c3c'}
+];
+
+// ADNOC 6×6 Risk Matrix
+var SEVERITY = [
+  {n:6,label:'Disastrous',desc:'More than 10 fatalities or massive permanent environmental damage',short:'Disastrous'},
+  {n:5,label:'Catastrophic',desc:'Multiple fatalities (up to 10) or serious permanent environmental damage',short:'Catastrophic'},
+  {n:4,label:'Major',desc:'Single fatality or permanent total disability, serious local environmental impact',short:'Major'},
+  {n:3,label:'Serious',desc:'Serious injuries requiring hospitalisation, reversible partial disability',short:'Serious'},
+  {n:2,label:'Minor',desc:'Minor injuries, reversible effects, local environmental non-compliance',short:'Minor'},
+  {n:1,label:'Notable',desc:'Slight injuries with short-term effects, minor environmental impacts',short:'Notable'}
+];
+var LIKELIHOOD = [
+  {id:'A',label:'Term',n:1,freq:'Has not happened in the last 50 years worldwide',hse:'Has not occurred in world-wide industry'},
+  {id:'B',label:'Rare',n:2,freq:'Could occur in the next 20–30 years globally',hse:'Has occurred in world-wide industry'},
+  {id:'C',label:'Unlikely',n:3,freq:'Could occur within a 5–10 year timeframe in the group',hse:'Has occurred at least once in the Group Company'},
+  {id:'D',label:'Possible',n:4,freq:'Could occur within the 5-year strategic planning period',hse:'Has occurred more than once in Group Company'},
+  {id:'E',label:'Likely',n:5,freq:'Could occur more than once in the annual budget year',hse:'Has occurred more than once in Group Company or once on the site'},
+  {id:'F',label:'V. Likely',n:6,freq:'Has occurred more than once on the site',hse:'Has occurred more than once on the site'}
+];
+
+function getRiskLevel(severity, likelihoodId) {
+  var lMap={A:1,B:2,C:3,D:4,E:5,F:6};
+  var l=lMap[likelihoodId], s=parseInt(severity);
+  if ((s===6&&l>=2)||(s===5&&l>=3)||(s===4&&l>=4)||(s===3&&l>=5)) return 'RED';
+  if ((s===6&&l===1)||(s===5&&l<=2)||(s===4&&l===3)||(s===3&&l<=4&&l>=3)||(s===2&&l>=4)) return 'HIGH_MED';
+  if ((s===4&&l<=2)||(s===3&&l<=2)||(s===2&&l===3)||(s===1&&l>=4)) return 'MEDIUM';
+  return 'LOW';
+}
+function getRiskLabel(rl){return{RED:'RED / CAT1',HIGH_MED:'HIGH-MED / CAT2',MEDIUM:'MEDIUM / CAT3',LOW:'LOW / CAT4',UNRATED:'Not Rated'}[rl]||rl;}
+function getRiskAction(rl){return{RED:'Must be reduced ALARP immediately — Signoff by Director or GC CEO',HIGH_MED:'Should be reduced ALARP — Signoff by Unit Manager / SVP',MEDIUM:'Monitor and improve current controls — Signoff by Dept Manager / VP',LOW:'Low priority — monitor current controls — Signoff by Line Manager'}[rl]||'';}
+
+// ── APPLICATION STATE ─────────────────────────────────────────
+var state = {
+  view:'dashboard',
+  stepView:'detail',
+  currentStepId:null,
+  currentHazardId:null,
+  riskTarget:null,
+  ctrlTarget:null,
+  epcTarget:null,
+  hzEnergy:null,
+  ctrlType:'engineering',
+  epcCategory:'job',
+  epcType:null,
+  aiLastResult:null,
+  assess:{
+    title:'',location:'',date:'',assessor:'',department:'',description:'',
+    steps:[]
+  }
+};
+var nextId=1;
+function uid(){return nextId++;}
+
+// ── SHORTCUTS ─────────────────────────────────────────────────
+function getStep(id){return state.assess.steps.find(function(s){return s.id===id;})||null;}
+function getHazard(step,id){return (step.hazards||[]).find(function(h){return h.id===id;})||null;}
+function deepCopy(o){return JSON.parse(JSON.stringify(o));}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function trunc(s,n){return s&&s.length>n?s.slice(0,n)+'…':s||'';}
+
+// ── API KEY ───────────────────────────────────────────────────
+var API_KEY_STORAGE='ra_studio_anthropic_key';
+function getApiKey(){try{return localStorage.getItem(API_KEY_STORAGE)||'';}catch(e){return '';}}
+function setApiKey(k){try{localStorage.setItem(API_KEY_STORAGE,k);}catch(e){} updateKeyUI();}
+function clearApiKey(){if(!confirm('Remove saved API key?'))return;try{localStorage.removeItem(API_KEY_STORAGE);}catch(e){} updateKeyUI();}
+function openKeyModal(){document.getElementById('apiKeyInput').value=getApiKey();openModal('keyModal');setTimeout(function(){document.getElementById('apiKeyInput').focus();},50);}
+function saveApiKey(){var v=document.getElementById('apiKeyInput').value.trim();if(!v){alert('Paste your API key first.');return;}if(!v.startsWith('sk-ant-')&&!confirm('Key does not look like an Anthropic key. Save anyway?'))return;setApiKey(v);closeModal('keyModal');renderSidebar();}
+function updateKeyUI(){var has=!!getApiKey();var badge=document.getElementById('keyBadge');if(badge){badge.textContent=has?'✓ Set':'No Key';badge.className='key-status '+(has?'key-set':'key-unset');}}
+
+// ── MODAL HELPERS ─────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('active');}
+function closeModal(id){document.getElementById(id).classList.remove('active');}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function navigate(view,stepId){
+  state.view=view;
+  if(stepId!==undefined) state.currentStepId=stepId;
+  renderAll();
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────
+function renderAll(){renderSidebar();renderView();updateInfoBar();}
+
+function renderSidebar(){
+  var views=[
+    {v:'dashboard',icon:'🏠',label:'Dashboard'},
+    {v:'setup',icon:'⚙',label:'Assessment Setup'},
+    {v:'steps',icon:'📋',label:'Task Steps',count:state.assess.steps.length},
+    {v:'frontline',icon:'🛠',label:'Frontline Tools'},
+    {v:'summary',icon:'📊',label:'Summary & Report'}
+  ];
+  var nav='';
+  views.forEach(function(vi){
+    var ac=state.view===vi.v||((state.view==='step-detail')&&vi.v==='steps');
+    nav+='<button class="nav-btn'+(ac?' active':'')+'" onclick="navigate(\''+vi.v+'\')">';
+    nav+='<span class="nav-icon">'+vi.icon+'</span><span class="nav-label">'+vi.label+'</span>';
+    if(vi.count!==undefined) nav+='<span class="nav-count">'+vi.count+'</span>';
+    nav+='</button>';
+  });
+  document.getElementById('sideNav').innerHTML=nav;
+
+  var content='';
+  // Manual Mode info panel
+  content+='<div class="s-sec"><div class="s-lbl">Manual Mode</div>';
+  content+='<div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.25);border-radius:6px;padding:10px 12px;">';
+  content+='<div style="font-size:.72rem;color:#34d399;font-weight:700;margin-bottom:5px">✋ No API Key Needed</div>';
+  content+='<div style="font-size:.7rem;color:var(--muted);line-height:1.5">Use the category buttons and EPC taxonomy in each step to add conditions manually. All exports work fully offline.</div>';
+  content+='<a href="index.html" style="display:inline-block;margin-top:8px;background:rgba(0,180,216,.15);border:1px solid rgba(0,180,216,.3);color:var(--accent);padding:4px 10px;border-radius:4px;font-size:.68rem;font-weight:700;text-decoration:none">⚡ Switch to AI Mode →</a>';
+  content+='</div></div>';
+
+  // Quick actions based on view
+  if(state.view==='steps'||state.view==='step-detail'){
+    content+='<div class="s-sec"><div class="s-lbl">Quick Add</div>';
+    content+='<label>New Task Step</label>';
+    content+='<textarea id="quickStep" placeholder="Describe the task step..." style="min-height:45px"></textarea>';
+    content+='<div class="btn-group"><button class="btn btn-green btn-sm" onclick="addStepQuick()">+ Add Step</button>';
+    if(state.currentStepId&&state.view==='step-detail') content+='<button class="btn btn-ghost btn-sm" onclick="navigate(\'steps\')">← Steps List</button>';
+    content+='</div></div>';
+  }
+
+  // Export section
+  content+='<div class="s-sec"><div class="s-lbl">Export & Reports</div>';
+  content+='<div class="btn-group">';
+  content+='<button class="btn btn-ghost btn-sm" style="flex:1" onclick="exportExcel()">📊 Excel</button>';
+  content+='<button class="btn btn-ghost btn-sm" style="flex:1" onclick="exportWord()">📄 Word</button>';
+  content+='</div>';
+  content+='<div class="btn-group" style="margin-top:4px">';
+  content+='<button class="btn btn-ghost btn-sm" style="flex:1" onclick="exportJSON()">⬇ JSON</button>';
+  content+='<button class="btn btn-danger btn-sm" style="flex:1" onclick="resetAll()">↺ Reset</button>';
+  content+='</div></div>';
+
+  document.getElementById('sideContent').innerHTML=content;
+  updateKeyUI();
+}
+
+function renderView(){
+  var el=document.getElementById('viewContainer');
+  switch(state.view){
+    case 'dashboard': el.innerHTML=renderDashboard(); break;
+    case 'setup':     el.innerHTML=renderSetup(); break;
+    case 'steps':     el.innerHTML=renderStepsList(); break;
+    case 'step-detail': el.innerHTML=renderStepDetail(); break;
+    case 'frontline': el.innerHTML=renderFrontline(); break;
+    case 'summary':   el.innerHTML=renderSummary(); break;
+    default: el.innerHTML='';
+  }
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────
+function renderDashboard(){
+  var s=state.assess;
+  var totalHazards=0,redCount=0,controlCount=0,epcCount=0;
+  s.steps.forEach(function(st){
+    totalHazards+=(st.hazards||[]).length;
+    epcCount+=(st.epcs||[]).length;
+    (st.hazards||[]).forEach(function(h){
+      if(h.initRisk==='RED') redCount++;
+      controlCount+=(h.controls||[]).length;
+    });
+  });
+  var progress=Math.round((s.title&&s.description&&s.steps.length&&totalHazards&&controlCount)?Math.min(100,20+(s.steps.length*10)+(totalHazards*8)+(controlCount*5)):0);
+
+  return '<div class="db-hero"><div class="db-hero-title">Risk<span>2</span>Safe RA Studio</div>'+
+    '<div class="db-hero-sub">AI-powered task-based risk assessment following EI 3580 guidance with ADNOC 6×6 risk ranking. Identify hazards using energy sources, assess error-producing conditions, apply hierarchy of controls, and rate initial and residual risk.</div>'+
+    (s.title?'<div style="background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.3);border-radius:6px;padding:10px 14px;display:inline-block;margin-top:6px">'+
+    '<span style="font-size:.72rem;color:var(--muted)">Current: </span><strong style="color:var(--accent)">'+esc(s.title)+'</strong>'+
+    '<div style="font-size:.66rem;color:var(--muted);margin-top:2px">'+esc(s.location||'No location')+(s.date?' | '+s.date:'')+'</div>'+
+    '</div>':'<button class="btn btn-green" onclick="navigate(\'setup\')">▶ Start New Assessment</button>')+
+    '</div>'+
+
+    '<div class="kpi-row">'+
+    '<div class="kpi-card"><span class="kpi-num">'+s.steps.length+'</span><span class="kpi-label">Task Steps</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num">'+totalHazards+'</span><span class="kpi-label">Hazards</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num" style="color:var(--red)">'+redCount+'</span><span class="kpi-label">RED Risks</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num" style="color:var(--green)">'+controlCount+'</span><span class="kpi-label">Controls</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num">'+epcCount+'</span><span class="kpi-label">EPCs / PIFs</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num" style="color:var(--orange)">'+progress+'%</span><span class="kpi-label">Complete</span></div>'+
+    '</div>'+
+
+    (progress>0?'<div class="card"><div class="card-hdr"><span class="card-title">Assessment Progress</span></div><div class="progress-bar"><div class="progress-fill" style="width:'+progress+'%"></div></div></div>':'')+''+
+
+    '<div class="db-grid">'+
+    '<div class="db-card hoverable" onclick="navigate(\'setup\')"><span class="db-card-icon">⚙</span><div class="db-card-title">Assessment Setup</div><div class="db-card-sub">Define the task, location, assessor and scope of this risk assessment.</div><div class="db-card-action"><span class="btn btn-ghost btn-sm">Open →</span></div></div>'+
+    '<div class="db-card hoverable" onclick="navigate(\'steps\')"><span class="db-card-icon">📋</span><div class="db-card-title">Task Steps</div><div class="db-card-sub">Break down the task into steps. For each step: identify hazards, assess risk, add EPCs and controls.</div><div class="db-card-action"><span class="btn btn-ghost btn-sm">Build Steps →</span></div></div>'+
+    '<div class="db-card hoverable" onclick="navigate(\'frontline\')"><span class="db-card-icon">🛠</span><div class="db-card-title">Frontline Tools</div><div class="db-card-sub">9 digital tools for pre-job, during-job and post-job human factors checks.</div><div class="db-card-action"><span class="btn btn-ghost btn-sm">Open Tools →</span></div></div>'+
+    '<div class="db-card hoverable" onclick="navigate(\'summary\')"><span class="db-card-icon">📊</span><div class="db-card-title">Summary & Report</div><div class="db-card-sub">Full risk register, EPC summary and export to Excel, Word or PDF.</div><div class="db-card-action"><span class="btn btn-ghost btn-sm">View Report →</span></div></div>'+
+    '</div>'+
+
+    '<div class="card" style="background:linear-gradient(135deg,rgba(0,180,216,.05),rgba(16,185,129,.03));border-color:rgba(0,180,216,.2)">'+
+    '<div class="card-hdr"><span class="card-title" style="color:var(--accent)">EI 3580 — 6-Stage Methodology</span></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">'+
+    ['Stage 1: Identify Task Steps','Stage 2: Identify Hazards (Energy Sources)','Stage 3: Identify EPCs / Errors','Stage 4: Control Hazards & EPCs','Stage 5: Rate Initial & Residual Risk','Stage 6: Review Controls'].map(function(s,i){
+      return '<span style="background:var(--bg-card2);border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:.69rem;color:var(--muted)"><strong style="color:var(--accent)">'+(i+1)+'</strong> '+s.slice(9)+'</span>';
+    }).join('')+
+    '</div></div>';
+}
+
+// ── SETUP VIEW ────────────────────────────────────────────────
+function renderSetup(){
+  var s=state.assess;
+  return '<div class="sec-hdr"><div class="sec-hdr-icon" style="background:rgba(0,180,216,.15);color:var(--accent)">⚙</div>'+
+    '<div><div class="sec-hdr-title">Assessment Setup</div><div class="sec-hdr-sub">Define the task and context for this risk assessment</div></div>'+
+    '<div class="sec-hdr-actions"><button class="btn btn-green" onclick="saveSetup()">Save & Continue →</button></div></div>'+
+
+    '<div class="card">'+
+    '<div class="card-hdr"><span class="card-title">Assessment Information</span></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+    '<div><label>Assessment Title *</label><input type="text" id="f-title" value="'+esc(s.title)+'" placeholder="e.g. Hot Work on Live Plant — Gas Compression Area"></div>'+
+    '<div><label>Location / Facility</label><input type="text" id="f-location" value="'+esc(s.location)+'" placeholder="e.g. Platform A, Module 4, Deck 2"></div>'+
+    '<div><label>Date</label><input type="date" id="f-date" value="'+esc(s.date)+'"></div>'+
+    '<div><label>Lead Assessor</label><input type="text" id="f-assessor" value="'+esc(s.assessor)+'" placeholder="Name and designation"></div>'+
+    '<div><label>Department / Team</label><input type="text" id="f-dept" value="'+esc(s.department)+'" placeholder="e.g. Operations, Maintenance, Projects"></div>'+
+    '</div>'+
+    '<div style="margin-top:10px"><label>Task / Activity Description *</label>'+
+    '<textarea id="f-desc" style="min-height:80px" placeholder="Describe the full task, work scope, equipment involved, operating conditions and any special considerations. The more detail here, the better the AI suggestions will be.">'+esc(s.description)+'</textarea></div>'+
+    '<div class="rule" style="margin-top:10px"><strong>Tip:</strong> Include: process fluids, pressure/temperature, equipment tags, isolation requirements, permit type, team size and any site-specific hazards.</div>'+
+    '</div>'+
+
+    '<div class="card" style="background:var(--bg-card);border-color:rgba(16,185,129,.25)">'+
+    '<div class="card-hdr"><span class="card-title" style="color:var(--green)">EI 3580 Scope</span></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:.76rem">'+
+    '<div style="background:var(--bg-card2);border-radius:6px;padding:10px"><strong style="color:var(--accent)">Intended Users</strong><div style="color:var(--muted);margin-top:4px;line-height:1.5">Supervisors, frontline workers, safety managers. No human factors specialist required.</div></div>'+
+    '<div style="background:var(--bg-card2);border-radius:6px;padding:10px"><strong style="color:var(--accent)">When to Use</strong><div style="color:var(--muted);margin-top:4px;line-height:1.5">Before tasks under PTW; for high-risk maintenance, operations, commissioning, or non-routine activities.</div></div>'+
+    '<div style="background:var(--bg-card2);border-radius:6px;padding:10px"><strong style="color:var(--accent)">Output</strong><div style="color:var(--muted);margin-top:4px;line-height:1.5">Risk register with initial & residual risk, EPC controls, control hierarchy — supports ALARP demonstration.</div></div>'+
+    '</div></div>';
+}
+
+function saveSetup(){
+  state.assess.title=document.getElementById('f-title').value.trim();
+  state.assess.location=document.getElementById('f-location').value.trim();
+  state.assess.date=document.getElementById('f-date').value;
+  state.assess.assessor=document.getElementById('f-assessor').value.trim();
+  state.assess.department=document.getElementById('f-dept').value.trim();
+  state.assess.description=document.getElementById('f-desc').value.trim();
+  if(!state.assess.title){alert('Please enter an Assessment Title.');return;}
+  navigate('steps');
+}
+
+// ── STEP MANAGEMENT ───────────────────────────────────────────
+function addStepQuick(){
+  var el=document.getElementById('quickStep');
+  var desc=(el?el.value.trim():'');
+  if(!desc){alert('Enter a step description first.');return;}
+  var step={id:uid(),number:state.assess.steps.length+1,description:desc,hazards:[],epcs:[]};
+  state.assess.steps.push(step);
+  if(el) el.value='';
+  navigate('step-detail',step.id);
+}
+
+function addStep(desc){
+  var step={id:uid(),number:state.assess.steps.length+1,description:desc||'New step — click to edit',hazards:[],epcs:[]};
+  state.assess.steps.push(step);
+  navigate('step-detail',step.id);
+}
+
+function removeStep(id){
+  if(!confirm('Remove this step and all its hazards?'))return;
+  state.assess.steps=state.assess.steps.filter(function(s){return s.id!==id;});
+  state.assess.steps.forEach(function(s,i){s.number=i+1;});
+  if(state.currentStepId===id) state.currentStepId=null;
+  navigate('steps');
+}
+
+function updateStepDesc(id,val){
+  var st=getStep(id); if(!st)return; st.description=val;
+}
+
+// ── STEPS LIST VIEW ───────────────────────────────────────────
+function renderStepsList(){
+  var steps=state.assess.steps;
+  var html='<div class="sec-hdr"><div class="sec-hdr-icon" style="background:rgba(0,180,216,.15);color:var(--accent)">📋</div>'+
+    '<div><div class="sec-hdr-title">Task Steps</div><div class="sec-hdr-sub">EI 3580 Stage 1 — Break the task into steps, then assess each one</div></div>'+
+    '<div class="sec-hdr-actions">'+
+    // No AI button in manual +
+    '<button class="btn btn-green" onclick="addStep()">+ Add Step</button></div></div>';
+
+  if(!steps.length){
+    html+='<div class="card"><div class="empty-state"><span class="empty-state-icon">📋</span>'+
+      '<div class="empty-state-title">No task steps yet</div>'+
+      '<div class="empty-state-sub">Add steps in the sidebar, use "AI Suggest Steps", or enter them manually below.</div>'+
+      '<button class="btn btn-green" onclick="addStep()">+ Add First Step</button></div></div>';
+    // Quick add form
+    html+='<div class="card"><div class="card-hdr"><span class="card-title">Add Step Quickly</span></div>'+
+      '<textarea id="newStepDesc" placeholder="Describe the task step e.g. \'1. Isolate the pump using LOTO and verify zero energy state\'"></textarea>'+
+      '<div class="btn-group"><button class="btn btn-green" onclick="addStepFromCard()">+ Add Step</button></div></div>';
+    return html;
+  }
+
+  // Summary bar
+  var totalHaz=0,totalCtrl=0,epcTotal=0,redCount=0;
+  steps.forEach(function(s){
+    totalHaz+=(s.hazards||[]).length;
+    epcTotal+=(s.epcs||[]).length;
+    (s.hazards||[]).forEach(function(h){if(h.initRisk==='RED')redCount++;totalCtrl+=(h.controls||[]).length;});
+  });
+  html+='<div class="kpi-row" style="margin-bottom:14px">'+
+    '<div class="kpi-card"><span class="kpi-num">'+steps.length+'</span><span class="kpi-label">Steps</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num">'+totalHaz+'</span><span class="kpi-label">Hazards</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num" style="color:var(--red)">'+redCount+'</span><span class="kpi-label">RED</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num" style="color:var(--green)">'+totalCtrl+'</span><span class="kpi-label">Controls</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num">'+epcTotal+'</span><span class="kpi-label">EPCs</span></div>'+
+    '</div>';
+
+  steps.forEach(function(st){
+    var hc=(st.hazards||[]).length, ec=(st.epcs||[]).length, cc=0, rc=0;
+    (st.hazards||[]).forEach(function(h){cc+=(h.controls||[]).length; if(h.initRisk==='RED')rc++;});
+    var complete=hc>0&&cc>0;
+    html+='<div class="step-card" onclick="navigate(\'step-detail\','+st.id+')">'+
+      '<div class="step-card-hdr">'+
+      '<div class="step-num">'+st.number+'</div>'+
+      '<div style="flex:1"><div class="step-desc">'+esc(st.description)+'</div>'+
+      '<div class="step-meta">'+hc+' hazard'+(hc!==1?'s':'')+' · '+cc+' control'+(cc!==1?'s':'')+' · '+ec+' EPC'+(ec!==1?'s':'')+'</div></div>'+
+      '<div class="step-badges">'+
+      (rc>0?'<span class="step-badge risk-chip RED">'+rc+' RED</span>':'')+
+      '<span class="step-badge" style="background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.2);padding:2px 8px;border-radius:10px;font-size:.62rem">'+(complete?'✓ Assessed':'→ Open')+'</span>'+
+      '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeStep('+st.id+')" style="margin-left:4px">✕</button>'+
+      '</div></div></div>';
+  });
+
+  html+='<div class="card" style="margin-top:4px">'+
+    '<textarea id="newStepDesc" placeholder="Add another step description and click Add" style="min-height:40px"></textarea>'+
+    '<div class="btn-group"><button class="btn btn-green btn-sm" onclick="addStepFromCard()">+ Add Step</button></div></div>';
+  return html;
+}
+
+function addStepFromCard(){
+  var el=document.getElementById('newStepDesc');
+  var desc=(el?el.value.trim():'');
+  if(!desc){alert('Enter a step description.');return;}
+  addStep(desc);
+}
+
+// ── STEP DETAIL VIEW ──────────────────────────────────────────
+function renderStepDetail(){
+  var st=getStep(state.currentStepId);
+  if(!st) return '<div class="card"><div class="empty-state"><span class="empty-state-icon">📋</span><div class="empty-state-title">No step selected</div><button class="btn btn-ghost" onclick="navigate(\'steps\')">← Back to Steps</button></div></div>';
+
+  var html='<div class="sec-hdr">'+
+    '<div class="sec-hdr-icon" style="background:rgba(0,180,216,.15);color:var(--accent)">'+st.number+'</div>'+
+    '<div><div class="sec-hdr-title" style="font-size:1.1rem">'+esc(st.description)+'</div>'+
+    '<div class="sec-hdr-sub">Stages 2–5: Hazards · Risk Rating · EPCs · Controls · Residual Risk</div></div>'+
+    '<div class="sec-hdr-actions">'+
+    '<button class="btn btn-ghost btn-sm" onclick="navigate(\'steps\')">← All Steps</button>'+
+    // No AI button in manual +
+    '</div></div>';
+
+  // Edit step desc
+  html+='<div class="card" style="padding:10px 14px;margin-bottom:10px">'+
+    '<div style="display:flex;gap:8px;align-items:center">'+
+    '<label style="margin:0;color:var(--muted);font-size:.7rem;white-space:nowrap">Step '+st.number+':</label>'+
+    '<input type="text" value="'+esc(st.description)+'" onchange="updateStepDesc('+st.id+',this.value)" style="flex:1;font-size:.82rem">'+
+    '</div></div>';
+
+  // STAGE 2: Energy Sources → Hazards
+  html+='<div class="card">'+
+    '<div class="card-hdr"><span class="card-title" style="color:var(--orange)">⚡ Stage 2: Hazards (via Energy Sources)</span>'+
+    '<span style="font-size:.7rem;color:var(--muted);margin-left:auto">Identify what energies are present and what harm each can cause</span>'+
+    '<button class="btn btn-orange btn-sm" style="margin-left:8px" onclick="openHazardModal('+st.id+')">+ Add Hazard</button></div>';
+
+  if(!(st.hazards||[]).length){
+    html+='<div class="empty-state" style="padding:20px"><span class="empty-state-icon" style="font-size:1.5rem">⚡</span>'+
+      '<div class="empty-state-sub" style="font-size:.76rem">Use the 10 energy sources (EI 3580) to identify hazards: Gravity, Motion, Mechanical, Electrical, Pressure, Temperature, Chemical, Biological, Radiation, Sound</div>'+
+      '<button class="btn btn-orange btn-sm" onclick="openHazardModal('+st.id+')">+ Add First Hazard</button></div>';
+  }else{
+    (st.hazards||[]).forEach(function(h){html+=renderHazardBlock(st,h);});
+  }
+  html+='</div>';
+
+  // STAGE 3: Error-Producing Conditions — inline panel, no modal
+  html+='<div class="card" id="epc-card-'+st.id+'">'+
+    '<div class="card-hdr"><span class="card-title" style="color:var(--accent)">⚠ Stage 3: Error-Producing Conditions (PIFs)</span>'+
+    '<span style="font-size:.7rem;color:var(--muted);margin-left:auto">Job · Person · Organisation factors that increase human error likelihood</span></div>';
+
+  // Existing EPC list
+  if((st.epcs||[]).length){
+    html+='<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px">';
+    (st.epcs||[]).forEach(function(ep){
+      var cat=EPC_DATA[ep.category]||EPC_DATA.job;
+      html+='<div class="ctrl-item">'+
+        '<span class="ctrl-type-badge" style="background:rgba(0,0,0,.2);color:'+cat.color+';border:1px solid '+cat.color+'40">'+cat.label.split(' ')[0]+'</span>'+
+        '<div class="ctrl-text"><strong style="color:'+cat.color+'">'+esc(ep.epcType)+'</strong>'+
+        '<div style="color:var(--muted);font-size:.7rem;margin-top:1px">'+esc(ep.description)+'</div>'+
+        (ep.control?'<div style="color:var(--green);font-size:.68rem;margin-top:2px">✓ Control: '+esc(ep.control)+'</div>':'')+
+        '</div><button class="ctrl-rm" onclick="removeEPC('+st.id+','+ep.id+')">✕</button></div>';
+    });
+    html+='</div>';
+  }
+
+  // Inline add EPC form
+  html+='<div style="background:var(--bg-card2);border:1px solid var(--border);border-radius:7px;padding:12px 14px">'+
+    '<div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Add Error-Producing Condition</div>'+
+
+    // Category selector
+    '<div style="display:flex;gap:5px;margin-bottom:8px">'+
+    Object.values(EPC_DATA).map(function(cat){
+      return '<button class="btn btn-sm" id="epccatbtn-'+st.id+'-'+cat.cat+'" onclick="selectInlineEPCCat('+st.id+',''+cat.cat+'')" style="flex:1;justify-content:center;background:rgba(0,0,0,.2);color:'+cat.color+';border:1px solid '+cat.color+'33">'+cat.label+'</button>';
+    }).join('')+
+    '</div>'+
+
+    // EPC type tags — shown for selected category
+    '<div id="epc-tags-'+st.id+'" style="display:flex;flex-wrap:wrap;gap:4px;min-height:28px;margin-bottom:8px;padding:6px 8px;background:var(--bg);border-radius:5px;border:1px solid var(--border)">'+
+    '<span style="color:var(--muted);font-size:.7rem;align-self:center">← Select a category above, then click an EPC type</span>'+
+    '</div>'+
+
+    // Description + control fields
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'+
+    '<div><label style="font-size:.66rem;color:var(--muted);margin-bottom:3px;display:block">Specific Condition <span style="color:var(--red)">*</span></label>'+
+    '<input type="text" id="epc-desc-'+st.id+'" placeholder="Describe the specific EPC e.g. 'Labels faded, cannot read valve ID'"></div>'+
+    '<div><label style="font-size:.66rem;color:var(--muted);margin-bottom:3px;display:block">Control Measure</label>'+
+    '<input type="text" id="epc-ctrl-'+st.id+'" placeholder="How to control this EPC e.g. 'Re-label all valves before task'"></div>'+
+    '</div>'+
+
+    // Action buttons
+    '<div style="display:flex;gap:6px;align-items:center">'+
+    '<button class="btn btn-primary btn-sm" onclick="saveInlineEPC('+st.id+')">+ Add EPC</button>'+
+    '<button class="btn btn-ghost btn-sm" onclick="aiSuggestEPCsInline('+st.id+')">⚡ AI Suggest EPCs</button>'+
+    '<span id="epc-status-'+st.id+'" style="font-size:.68rem;color:var(--green);margin-left:4px"></span>'+
+    '</div>'+
+
+    // AI suggestions appear inline here
+    '<div id="epc-ai-'+st.id+'" style="margin-top:8px"></div>'+
+    '</div></div>';
+
+  return html;
+}
+
+function renderHazardBlock(st,h){
+  var energySrc=ENERGY_SOURCES.find(function(e){return e.id===h.energySource;})||{name:'Unknown',badge:'',color:'#7a8fa8',icon:'?'};
+  var ctrlCount=(h.controls||[]).length;
+  var html='<div class="hazard-block" id="hb-'+h.id+'">'+
+    '<div class="hazard-block-hdr">'+
+    '<span style="font-size:1rem">'+energySrc.icon+'</span>'+
+    '<span class="energy-badge" style="'+energySrc.badge+'">'+energySrc.name+'</span>'+
+    '<span style="font-size:.8rem;font-weight:500;flex:1;margin-left:4px">'+esc(h.hazardDesc||h.desc||'')+'</span>'+
+    '<button class="btn btn-danger btn-sm" onclick="removeHazard('+st.id+','+h.id+')">✕ Remove</button></div>'+
+    '<div class="hazard-block-body">'+
+
+    // Initial vs Residual risk grid
+    '<div class="hazard-block-grid">'+
+    '<div>'+
+    '<div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Initial Risk (Before Controls)</div>'+
+    '<button class="risk-picker-btn" onclick="openRiskModal('+st.id+','+h.id+',\'init\')">'+
+    '<span class="risk-picker-label">Severity × Likelihood</span>'+
+    (h.initSev&&h.initLik?
+      '<span class="risk-chip '+(h.initRisk||'UNRATED')+'">'+h.initSev+' × '+h.initLik+' — '+getRiskLabel(h.initRisk)+'</span>':
+      '<span class="risk-chip UNRATED">Click to Rate →</span>')+
+    '</button>'+
+    (h.initRisk?'<div style="font-size:.64rem;color:var(--muted);margin-top:4px">'+getRiskAction(h.initRisk)+'</div>':'')+
+    '</div>'+
+
+    '<div>'+
+    '<div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Residual Risk (After Controls)</div>'+
+    '<button class="risk-picker-btn" onclick="openRiskModal('+st.id+','+h.id+',\'res\')">'+
+    '<span class="risk-picker-label">Severity × Likelihood</span>'+
+    (h.resSev&&h.resLik?
+      '<span class="risk-chip '+(h.resRisk||'UNRATED')+'">'+h.resSev+' × '+h.resLik+' — '+getRiskLabel(h.resRisk)+'</span>':
+      '<span class="risk-chip UNRATED">Click to Rate →</span>')+
+    '</button>'+
+    (h.resRisk?'<div style="font-size:.64rem;color:var(--muted);margin-top:4px">'+getRiskAction(h.resRisk)+'</div>':'')+
+    '</div></div>'+
+
+    // Risk reduction arrow
+    (h.initRisk&&h.resRisk?'<div class="risk-arrow" style="font-size:.72rem;padding:6px">'+
+      '<span class="risk-chip '+(h.initRisk||'UNRATED')+'" style="font-size:.62rem">'+getRiskLabel(h.initRisk)+'</span>'+
+      ' → <span style="color:var(--green);font-weight:700">'+ctrlCount+' Control'+(ctrlCount!==1?'s':'')+'</span> → '+
+      '<span class="risk-chip '+(h.resRisk||'UNRATED')+'" style="font-size:.62rem">'+getRiskLabel(h.resRisk)+'</span></div>':'')+
+
+    // Stage 4: Controls
+    '<div style="margin-top:12px">'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'+
+    '<div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Stage 4: Controls (Hierarchy)</div>'+
+    '<button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="openCtrlModal('+st.id+','+h.id+')">+ Add Control</button>'+
+    // No AI suggest in manual +
+    '</div>';
+
+  if(!ctrlCount){
+    html+='<div style="padding:8px;background:rgba(245,158,11,.06);border:1px dashed rgba(245,158,11,.3);border-radius:5px;font-size:.72rem;color:var(--muted);text-align:center">'+
+      'No controls yet. Apply hierarchy: Eliminate → Substitute → Engineering → Admin/Proc → PPE</div>';
+  }else{
+    (h.controls||[]).forEach(function(c){
+      var ct=CONTROL_TYPES.find(function(ct){return ct.id===c.type;})||{label:'Control',cls:'ctrl-adm',abbrev:'CTRL'};
+      html+='<div class="ctrl-item"><span class="ctrl-type-badge '+ct.cls+'">'+ct.abbrev+'</span>'+
+        '<span class="ctrl-text">'+esc(c.description)+'</span>'+
+        '<button class="ctrl-rm" onclick="removeControl('+st.id+','+h.id+','+c.id+')">✕</button></div>';
+    });
+  }
+  html+='</div></div></div>';
+  return html;
+}
+
+// ── HAZARD CRUD ───────────────────────────────────────────────
+function openHazardModal(stepId){
+  state.riskTarget={stepId:stepId,hazardId:null};
+  state.hzEnergy=null;
+  state.currentStepId=stepId;
+  document.getElementById('hzDesc').value='';
+  renderEnergyGrid();
+  openModal('hazardModal');
+}
+
+function renderEnergyGrid(){
+  var html='';
+  ENERGY_SOURCES.forEach(function(e){
+    var sel=state.hzEnergy===e.id;
+    html+='<div class="energy-item'+(sel?' selected':'')+'" onclick="selectEnergy(\''+e.id+'\')">'+
+      '<span class="energy-icon">'+e.icon+'</span>'+
+      '<span class="energy-name">'+e.name+'</span></div>';
+  });
+  document.getElementById('modalEnergyGrid').innerHTML=html;
+}
+
+function selectEnergy(id){
+  state.hzEnergy=id;
+  renderEnergyGrid();
+  // Auto-populate examples
+  var src=ENERGY_SOURCES.find(function(e){return e.id===id;});
+  if(src&&!document.getElementById('hzDesc').value.trim()){
+    document.getElementById('hzDesc').placeholder='e.g. '+src.hazards[0];
+  }
+}
+
+function saveHazard(){
+  var desc=document.getElementById('hzDesc').value.trim();
+  if(!state.hzEnergy){alert('Select an energy source first.');return;}
+  if(!desc){alert('Enter a hazard description.');return;}
+  var st=getStep(state.riskTarget.stepId);
+  if(!st)return;
+  var h={id:uid(),energySource:state.hzEnergy,hazardDesc:desc,initSev:null,initLik:null,initRisk:null,resSev:null,resLik:null,resRisk:null,controls:[]};
+  st.hazards.push(h);
+  closeModal('hazardModal');
+  state.currentStepId=st.id;
+  renderAll();
+}
+
+function removeHazard(stepId,hazId){
+  if(!confirm('Remove this hazard?'))return;
+  var st=getStep(stepId);if(!st)return;
+  st.hazards=st.hazards.filter(function(h){return h.id!==hazId;});
+  renderAll();
+}
+
+// ── RISK MATRIX ───────────────────────────────────────────────
+function openRiskModal(stepId,hazId,target){
+  state.riskTarget={stepId:stepId,hazardId:hazId,target:target};
+  var title=target==='init'?'Rate Initial Risk (Before Controls)':'Rate Residual Risk (After Controls)';
+  document.getElementById('riskModalTitle').textContent=title;
+  buildMatrixGrid(stepId,hazId,target);
+  openModal('riskModal');
+}
+
+function buildMatrixGrid(stepId,hazId,target){
+  var st=getStep(stepId);
+  var h=st?getHazard(st,hazId):null;
+  var selSev=h?(target==='init'?h.initSev:h.resSev):null;
+  var selLik=h?(target==='init'?h.initLik:h.resLik):null;
+
+  var html='';
+  // Headers row
+  html+='<div class="matrix-grid">';
+  html+='<div class="matrix-hdr"></div>';
+  LIKELIHOOD.forEach(function(l){
+    html+='<div class="likelihood-col-hdr" style="font-size:.58rem;text-align:center;padding:4px 2px">'+
+      '<div style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--text);font-size:.72rem">'+l.id+'</div>'+
+      '<div style="color:var(--muted);font-size:.58rem">'+l.label+'</div></div>';
+  });
+
+  // Rows: severity 6 down to 1
+  for(var si=0;si<SEVERITY.length;si++){
+    var sv=SEVERITY[si];
+    html+='<div class="matrix-row-lbl">'+
+      '<div style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--text);font-size:.7rem">'+sv.n+'</div>'+
+      '<span>'+sv.short+'</span></div>';
+    LIKELIHOOD.forEach(function(l){
+      var rl=getRiskLevel(sv.n,l.id);
+      var selected=(sv.n==selSev&&l.id==selLik);
+      html+='<div class="matrix-cell cell-'+rl+(selected?' selected':'')+'" '+
+        'onclick="selectRisk('+sv.n+',\''+l.id+'\')" '+
+        'title="Severity: '+sv.label+' | Likelihood: '+l.label+' | '+getRiskLabel(rl)+'">'+
+        sv.n+l.id+'</div>';
+    });
+  }
+  html+='</div>';
+
+  // Severity descriptions
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">';
+  html+='<div><div class="s-lbl" style="margin-bottom:5px">Severity Levels</div>';
+  SEVERITY.forEach(function(sv){
+    html+='<div style="display:flex;gap:6px;font-size:.64rem;margin-bottom:2px"><span style="font-weight:700;color:var(--accent);min-width:14px">'+sv.n+'</span><span style="color:var(--muted)"><strong style="color:var(--text)">'+sv.label+'</strong> — '+sv.desc+'</span></div>';
+  });
+  html+='</div><div><div class="s-lbl" style="margin-bottom:5px">Likelihood Levels</div>';
+  LIKELIHOOD.forEach(function(l){
+    html+='<div style="display:flex;gap:6px;font-size:.64rem;margin-bottom:2px"><span style="font-weight:700;color:var(--accent);min-width:14px">'+l.id+'</span><span style="color:var(--muted)"><strong style="color:var(--text)">'+l.label+'</strong> — '+l.freq+'</span></div>';
+  });
+  html+='</div></div>';
+
+  document.getElementById('riskMatrixGrid').innerHTML=html;
+}
+
+function selectRisk(sev,lik){
+  var rt=state.riskTarget;
+  var st=getStep(rt.stepId);
+  var h=st?getHazard(st,rt.hazardId):null;
+  if(!h)return;
+  var rl=getRiskLevel(sev,lik);
+  if(rt.target==='init'){h.initSev=sev;h.initLik=lik;h.initRisk=rl;}
+  else{h.resSev=sev;h.resLik=lik;h.resRisk=rl;}
+  closeModal('riskModal');
+  renderAll();
+}
+
+// ── EPC CRUD ──────────────────────────────────────────────────
+function openEPCModal(stepId){
+  state.riskTarget={stepId:stepId};
+  state.epcCategory='job'; state.epcType=null;
+  document.getElementById('epcDesc').value='';
+  document.getElementById('epcCtrl').value='';
+  renderEPCCatGrid();
+  openModal('epcModal');
+}
+
+function renderEPCCatGrid(){
+  var html='';
+  Object.values(EPC_DATA).forEach(function(cat){
+    html+='<div class="epc-cat"><div class="epc-cat-hdr '+cat.cat+'" onclick="selectEPCCat(\''+cat.cat+'\')">'+
+      cat.label+' <span style="margin-left:auto;font-size:.72rem">'+(state.epcCategory===cat.cat?'▾':'▸')+'</span></div>'+
+      (state.epcCategory===cat.cat?'<div class="epc-items">'+
+        cat.items.map(function(item){
+          var sel=state.epcType===item.id;
+          return '<div class="epc-tag '+cat.tagClass+(sel?' sel':'')+'" onclick="selectEPCType(\''+item.id+'\')" title="'+item.desc+'">'+item.name+'</div>';
+        }).join('')+'</div>':'')+
+      '</div>';
+  });
+  document.getElementById('epcCatGrid').innerHTML=html;
+}
+
+function selectEPCCat(cat){state.epcCategory=cat;state.epcType=null;renderEPCCatGrid();}
+function selectEPCType(id){state.epcType=id;renderEPCCatGrid();}
+
+function saveEPC(){
+  var desc=document.getElementById('epcDesc').value.trim();
+  if(!state.epcType&&!desc){alert('Select an EPC type or enter a description.');return;}
+  var st=getStep(state.riskTarget.stepId);if(!st)return;
+  var cat=EPC_DATA[state.epcCategory]||EPC_DATA.job;
+  var item=cat.items.find(function(i){return i.id===state.epcType;})||{name:'EPC'};
+  var ep={id:uid(),category:state.epcCategory,epcType:item.name,description:desc||item.desc,control:document.getElementById('epcCtrl').value.trim()};
+  st.epcs.push(ep);
+  closeModal('epcModal');
+  renderAll();
+}
+
+function removeEPC(stepId,epcId){
+  var st=getStep(stepId);if(!st)return;
+  st.epcs=st.epcs.filter(function(e){return e.id!==epcId;});
+  renderAll();
+}
+
+// ── CONTROL CRUD ──────────────────────────────────────────────
+function openCtrlModal(stepId,hazId){
+  state.riskTarget={stepId:stepId,hazardId:hazId};
+  state.ctrlType='engineering';
+  document.getElementById('ctrlDesc').value='';
+  renderCtrlTypeBar();
+  openModal('ctrlModal');
+}
+
+function renderCtrlTypeBar(){
+  var hints={
+    elimination:'Physically remove the hazard. E.g. Do not perform the task, redesign to eliminate.',
+    substitution:'Replace with something less dangerous. E.g. Use water-based instead of solvent-based product.',
+    engineering:'Physical barrier, guard, interlock, LOTO, forced function. Does not rely on human behaviour.',
+    administrative:'Procedure, permit, training, supervision, job scheduling. Relies on human compliance.',
+    ppe:'Hard hat, gloves, goggles, respirator. Last resort — does not eliminate hazard.'
+  };
+  var barHtml=CONTROL_TYPES.map(function(ct){
+    return '<div class="hier-btn'+(state.ctrlType===ct.id?' '+ct.hier:'')+'" onclick="selectCtrlType(\''+ct.id+'\')" title="'+ct.desc+'">'+ct.abbrev+'</div>';
+  }).join('');
+  document.getElementById('ctrlTypeBar').innerHTML=barHtml;
+  document.getElementById('ctrlTypeHint').textContent=hints[state.ctrlType]||'';
+}
+
+function selectCtrlType(t){state.ctrlType=t;renderCtrlTypeBar();}
+
+function saveControl(){
+  var desc=document.getElementById('ctrlDesc').value.trim();
+  if(!desc){alert('Enter a control description.');return;}
+  var st=getStep(state.riskTarget.stepId);if(!st)return;
+  var h=getHazard(st,state.riskTarget.hazardId);if(!h)return;
+  h.controls.push({id:uid(),type:state.ctrlType,description:desc});
+  closeModal('ctrlModal');
+  renderAll();
+}
+
+function removeControl(stepId,hazId,ctrlId){
+  var st=getStep(stepId);if(!st)return;
+  var h=getHazard(st,hazId);if(!h)return;
+  h.controls=h.controls.filter(function(c){return c.id!==ctrlId;});
+  renderAll();
+}
+
+// ── INFO BAR ──────────────────────────────────────────────────
+function updateInfoBar(){
+  var steps=state.assess.steps,totalHaz=0,redC=0,ctrlC=0,epcC=0;
+  steps.forEach(function(st){
+    totalHaz+=(st.hazards||[]).length;
+    epcC+=(st.epcs||[]).length;
+    (st.hazards||[]).forEach(function(h){if(h.initRisk==='RED')redC++;ctrlC+=(h.controls||[]).length;});
+  });
+  document.getElementById('ib-steps').textContent=steps.length+' Step'+(steps.length!==1?'s':'');
+  document.getElementById('ib-hazards').textContent=totalHaz+' Hazard'+(totalHaz!==1?'s':'');
+  document.getElementById('ib-red').textContent=redC+' RED';
+  document.getElementById('ib-epcs').textContent=epcC+' EPC'+(epcC!==1?'s':'');
+  document.getElementById('ib-controls').textContent=ctrlC+' Control'+(ctrlC!==1?'s':'');
+  document.getElementById('ib-assess').textContent=state.assess.title?'Assessment: '+state.assess.title:'';
+}
+
+// ── FRONTLINE TOOLS ───────────────────────────────────────────
+function renderFrontline(){
+  var html='<div class="sec-hdr"><div class="sec-hdr-icon" style="background:rgba(16,185,129,.15);color:var(--green)">🛠</div>'+
+    '<div><div class="sec-hdr-title">Frontline Risk Assessment Tools</div>'+
+    '<div class="sec-hdr-sub">EI 3580 Section 4 — 9 tools for pre-job, during-job and post-job human factors checks</div></div></div>';
+
+  // Tool 1
+  html+=renderTool(1,'Identify Energy Sources & EPCs','Before Job','before',
+    'A supervisor-led group exercise before starting the job. Uses the Energy & Error Wheel concept to identify hazards and error-producing conditions.',
+    ['Share the list of energy sources (Gravity, Motion, Mechanical, Electrical, Pressure, Temperature, Chemical, Biological, Radiation, Sound) with all workers.',
+     'Go through each energy source and ask: what hazards does this present for today\'s task?',
+     'Go through the EPC categories (Job, Person, Organisation). Ask: which of these apply today?',
+     'Ask workers to identify risk controls for each identified hazard and EPC.',
+     'Confirm all required controls are physically in place before giving go-ahead.'],
+    null,'Duration: 20–30 min'
+  );
+
+  // Tool 2: Last Minute RA
+  html+='<div class="tool-card"><div class="tool-hdr"><div class="tool-num">2</div><span class="tool-name">Last Minute Risk Assessment</span><span class="tool-timing timing-before">Before Job</span></div>';
+  html+='<div class="tool-desc">Go/No-go checklist to identify flag conditions before work starts. If any red-box answer appears, work must stop and supervisor must be consulted.</div>';
+  html+='<div id="lmra-checks" style="margin-top:8px">';
+  var lmraItems=[
+    'Is there anything about this task that makes me feel uneasy?',
+    'Is there any time pressure or management pressure compromising safety for speed?',
+    'Have all required risk controls been physically verified in place?',
+    'Go through energy sources — are there hazards needing better control?',
+    'Go through EPC categories — are there conditions to address before starting?',
+    'Do I have the correct, complete and current instructions and procedures?',
+    'Has anything changed since this job was last planned?'
+  ];
+  var redFlags=[false,true,false,false,false,false,true];
+  lmraItems.forEach(function(q,i){
+    html+='<div class="checklist-item"><input type="checkbox" id="lmra-'+i+'"> <label for="lmra-'+i+'">'+esc(q)+'</label>'+
+      (redFlags[i]?'<span class="tool-timing timing-before" style="margin-left:auto;font-size:.58rem">STOP if YES</span>':'<span class="tool-timing timing-after" style="margin-left:auto;font-size:.58rem">STOP if NO</span>')+'</div>';
+  });
+  html+='</div></div>';
+
+  // Tools 3–9
+  html+=renderTool(3,'15-Second Scan','During Job','during',
+    'A systematic visual scan pattern used to identify hazards during the job. Derived from aviation and military practice. Workers scan for hazards arising from energy sources and EPCs.',
+    ['Horizontal scan: side to side, left to right, covering the full work area width.',
+     'Vertical scan: top-down and bottom-up, covering all levels and overhead hazards.',
+     'Near to far: check immediate work area first, then expand outward.',
+     'Look for: gauges and parameters, equipment behind/around tools, predict movement of plant.'],
+    'Uses cognitive forcing to overcome inattentional blindness. Repeat every time conditions change.'
+  );
+
+  html+=renderTool(4,'Look, Point, Call Out','During Job','during',
+    'Human error prevention technique used in Japanese railways (Shisa Kanko). Reduces omission errors by up to 85% in controlled studies. Use when interacting with equipment that looks similar or could be confused.',
+    ['LOOK: Fix eyes on the object or equipment you are about to interact with.',
+     'POINT: Extend a finger or hand toward the object, confirming its identity.',
+     'CALL OUT: State aloud the name, value or state of what you see (e.g. "Valve XV-101 — CLOSED").'],
+    'Activates frontal lobe attention pathways. Effective for valve identification, instrument readings, label checks.'
+  );
+
+  html+=renderTool(5,'Self-Check (STAR)','During Job','during',
+    'A deliberate pause a worker takes to proactively verify accuracy before and after a critical action. The STAR method: Stop → Think → Act → Review.',
+    ['STOP: Pause before executing the critical step.',
+     'THINK: Verify the action is correct for this situation. Check measurements, part numbers, specifications.',
+     'ACT: Perform the action.',
+     'REVIEW: After taking a measurement or completing the step, look away and look back to confirm correctness.'],
+    'If unease is felt, do not ignore it — flag to supervisor. Unease is a signal.'
+  );
+
+  html+=renderTool(6,'Peer Check','During Job','during',
+    'Two workers jointly verify a critical step before and after execution. Provides an independent second layer of verification.',
+    ['Both workers pause before the critical step.',
+     'Worker 1 talks through the intended action and points to tools/equipment.',
+     'Worker 2 listens and confirms: "Yes, that is correct / that is the right valve / that reading is correct."',
+     'Worker 1 executes the agreed action.',
+     'Worker 2 confirms execution was correct.'],
+    'If Workers 1 and 2 disagree, stop and escalate. Never proceed under doubt.'
+  );
+
+  html+=renderTool(7,'Stop the Job','During Job','during',
+    'Empowers every worker to halt work immediately when a safety risk is perceived. Can only succeed when workers are actively supported by management — never penalise a stop-the-job call.',
+    ['STOP what you are doing. Step back to a safe position.',
+     'NOTIFY the supervisor immediately. State what you observed.',
+     'Criteria for stopping: imminent hazard; equipment malfunction; sudden environmental change; procedure cannot be followed as written; potential escalation; lack of resources; gut feeling; near miss; worker illness/fatigue; compromised controls; PPE unavailable.'],
+    null,'Authority: EVERY worker'
+  );
+
+  html+=renderTool(8,'Independent Verification','After Job','after',
+    'A safety double-check done by someone who was not involved in the original task. The fresh perspective catches errors that may have been missed.',
+    ['Worker 1 completes task, checks own work and signs off.',
+     'Verifier (independent) visits the worksite and inspects the work against the instructions WITHOUT making changes.',
+     'If problem found: alert supervisor. Do not re-do the work — stop and escalate.',
+     'If correct: verifier signs off and notifies the worker and supervisor.'],
+    'The verifier must be competent to assess the work but must not have been involved in executing it.'
+  );
+
+  html+=renderTool(9,'Post-Job Brief','After Job','after',
+    'A structured discussion after job completion. Identifies what went well, what to improve, and lessons to feed back into the risk management process.',
+    ['Was there anything you wish you had known or planned for differently?',
+     'Were there any surprises — hazards, EPCs or conditions not anticipated?',
+     'What documents, procedures or permits could be improved?',
+     'Can you identify an error that was made and what we can learn from it?',
+     'Was there a situation where you had to improvise or work around? What do we do differently next time?'],
+    'Record findings. Feed into the corrective action system. Recognise workers who raised issues.'
+  );
+
+  return html;
+}
+
+function renderTool(n,name,timing,timingClass,desc,steps,note,extra){
+  var html='<div class="tool-card"><div class="tool-hdr"><div class="tool-num">'+n+'</div><span class="tool-name">'+name+'</span>';
+  html+='<span class="tool-timing timing-'+timingClass+'">'+timing+'</span>';
+  if(extra) html+='<span style="font-size:.62rem;color:var(--muted);margin-left:8px">'+extra+'</span>';
+  html+='</div><div class="tool-desc">'+esc(desc)+'</div>';
+  if(steps){
+    html+='<div class="tool-steps">';
+    steps.forEach(function(s,i){html+='<div class="tool-step"><span class="tool-step-n">'+(i+1)+'.</span><span>'+esc(s)+'</span></div>';});
+    html+='</div>';
+  }
+  if(note) html+='<div class="rule" style="margin-top:8px"><strong>Note:</strong> '+esc(note)+'</div>';
+  html+='</div>';
+  return html;
+}
+
+// ── SUMMARY VIEW ──────────────────────────────────────────────
+function renderSummary(){
+  var s=state.assess;
+  var steps=s.steps;
+  var totalHaz=0,redC=0,hmC=0,medC=0,lowC=0,ctrlC=0,epcC=0;
+  steps.forEach(function(st){
+    totalHaz+=(st.hazards||[]).length;
+    epcC+=(st.epcs||[]).length;
+    (st.hazards||[]).forEach(function(h){
+      var r=h.initRisk;
+      if(r==='RED')redC++;else if(r==='HIGH_MED')hmC++;else if(r==='MEDIUM')medC++;else if(r==='LOW')lowC++;
+      ctrlC+=(h.controls||[]).length;
+    });
+  });
+
+  var html='<div class="sec-hdr"><div class="sec-hdr-icon" style="background:rgba(16,185,129,.15);color:var(--green)">📊</div>'+
+    '<div><div class="sec-hdr-title">Assessment Summary</div><div class="sec-hdr-sub">Full risk register with initial and residual risk ratings</div></div>'+
+    '<div class="sec-hdr-actions">'+
+    '<button class="btn btn-ghost btn-sm" onclick="exportExcel()">📊 Excel</button>'+
+    '<button class="btn btn-ghost btn-sm" onclick="exportWord()">📄 Word Report</button>'+
+    '</div></div>';
+
+  // Header
+  html+='<div class="card"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.78rem">'+
+    '<div><span style="color:var(--muted)">Assessment:</span> <strong>'+esc(s.title||'—')+'</strong></div>'+
+    '<div><span style="color:var(--muted)">Location:</span> <strong>'+esc(s.location||'—')+'</strong></div>'+
+    '<div><span style="color:var(--muted)">Date:</span> <strong>'+esc(s.date||'—')+'</strong></div>'+
+    '<div><span style="color:var(--muted)">Assessor:</span> <strong>'+esc(s.assessor||'—')+'</strong></div>'+
+    '<div style="grid-column:span 2"><span style="color:var(--muted)">Task:</span> '+esc(s.description||'—')+'</div>'+
+    '</div></div>';
+
+  // KPIs
+  html+='<div class="kpi-row">'+
+    '<div class="kpi-card"><span class="kpi-num">'+steps.length+'</span><span class="kpi-label">Steps</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num">'+totalHaz+'</span><span class="kpi-label">Hazards</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num" style="color:#fca5a5">'+redC+'</span><span class="kpi-label">RED</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num" style="color:#fcd34d">'+hmC+'</span><span class="kpi-label">HIGH-MED</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num" style="color:#fef08a">'+medC+'</span><span class="kpi-label">MEDIUM</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num" style="color:#6ee7b7">'+lowC+'</span><span class="kpi-label">LOW</span></div>'+
+    '<div class="kpi-card"><span class="kpi-num" style="color:var(--green)">'+ctrlC+'</span><span class="kpi-label">Controls</span></div>'+
+    '</div>';
+
+  // Risk Register Table
+  html+='<div class="card"><div class="card-hdr"><span class="card-title">Risk Register</span></div>';
+  if(!totalHaz){html+='<div class="empty-state" style="padding:20px"><div class="empty-state-sub">No hazards documented yet. Go to Task Steps to add hazards.</div></div>';}
+  else{
+    html+='<div style="overflow-x:auto"><table class="reg-table">'+
+      '<thead><tr>'+
+      '<th>#</th><th>Step</th><th>Energy</th><th>Hazard</th>'+
+      '<th>Initial Risk</th><th>Controls</th><th>Residual Risk</th><th>EPCs</th>'+
+      '</tr></thead><tbody>';
+    var row=1;
+    steps.forEach(function(st){
+      (st.hazards||[]).forEach(function(h){
+        var src=ENERGY_SOURCES.find(function(e){return e.id===h.energySource;})||{name:'—',icon:'?'};
+        var ctls=(h.controls||[]).map(function(c){var ct=CONTROL_TYPES.find(function(t){return t.id===c.type;})||{abbrev:'?'};return '['+ct.abbrev+'] '+c.description;}).join('\n');
+        html+='<tr>'+
+          '<td>'+row+'</td>'+
+          '<td>'+st.number+'. '+esc(trunc(st.description,40))+'</td>'+
+          '<td>'+src.icon+' '+esc(src.name)+'</td>'+
+          '<td>'+esc(trunc(h.hazardDesc||'',60))+'</td>'+
+          '<td><span class="risk-chip '+(h.initRisk||'UNRATED')+'">'+getRiskLabel(h.initRisk||'UNRATED')+'<br><small>'+((h.initSev&&h.initLik)?(h.initSev+'×'+h.initLik):'-')+'</small></span></td>'+
+          '<td style="white-space:pre-line;font-size:.66rem">'+esc(ctls||'—')+'</td>'+
+          '<td><span class="risk-chip '+(h.resRisk||'UNRATED')+'">'+getRiskLabel(h.resRisk||'UNRATED')+'<br><small>'+((h.resSev&&h.resLik)?(h.resSev+'×'+h.resLik):'-')+'</small></span></td>'+
+          '<td style="font-size:.66rem">'+((st.epcs||[]).length||'—')+'</td>'+
+          '</tr>';
+        row++;
+      });
+    });
+    html+='</tbody></table></div>';
+  }
+  html+='</div>';
+
+  // EPC Summary
+  if(epcC>0){
+    html+='<div class="card"><div class="card-hdr"><span class="card-title">Error-Producing Conditions (PIFs)</span></div><div style="overflow-x:auto"><table class="reg-table"><thead><tr><th>Step</th><th>Category</th><th>EPC Type</th><th>Description</th><th>Control</th></tr></thead><tbody>';
+    steps.forEach(function(st){
+      (st.epcs||[]).forEach(function(ep){
+        var cat=EPC_DATA[ep.category]||EPC_DATA.job;
+        html+='<tr>'+
+          '<td>'+st.number+'. '+esc(trunc(st.description,30))+'</td>'+
+          '<td style="color:'+cat.color+'">'+cat.label+'</td>'+
+          '<td>'+esc(ep.epcType||'—')+'</td>'+
+          '<td>'+esc(ep.description||'—')+'</td>'+
+          '<td style="color:var(--green)">'+esc(ep.control||'—')+'</td>'+
+          '</tr>';
+      });
+    });
+    html+='</tbody></table></div></div>';
+  }
+  return html;
+}
+
+// ── INLINE EPC FUNCTIONS (no modal) ─────────────────────────
+
+// Per-step inline EPC form state (category + type)
+var inlineEPCState = {};  // keyed by stepId: {cat, type}
+
+function getInlineEPC(stepId){
+  if(!inlineEPCState[stepId]) inlineEPCState[stepId]={cat:'job',type:null,typeName:''};
+  return inlineEPCState[stepId];
+}
+
+function selectInlineEPCCat(stepId, cat){
+  var s=getInlineEPC(stepId);
+  s.cat=cat; s.type=null; s.typeName='';
+  // Update category button styles
+  Object.values(EPC_DATA).forEach(function(c){
+    var btn=document.getElementById('epccatbtn-'+stepId+'-'+c.cat);
+    if(!btn) return;
+    if(c.cat===cat){
+      btn.style.background='rgba('+hexToRgb(c.color)+',.2)';
+      btn.style.borderColor=c.color;
+      btn.style.fontWeight='700';
+    } else {
+      btn.style.background='rgba(0,0,0,.2)';
+      btn.style.borderColor=c.color+'33';
+      btn.style.fontWeight='400';
+    }
+  });
+  // Render type tags
+  var catData=EPC_DATA[cat]||EPC_DATA.job;
+  var tagsEl=document.getElementById('epc-tags-'+stepId);
+  if(!tagsEl) return;
+  tagsEl.innerHTML=catData.items.map(function(item){
+    return '<div class="epc-tag '+catData.tagClass+'" id="epctag-'+stepId+'-'+item.id+'" '+
+      'onclick="selectInlineEPCType('+stepId+',''+item.id+'',''+esc(item.name)+'',''+esc(item.desc)+'')" '+
+      'title="'+esc(item.desc)+'">'+esc(item.name)+'</div>';
+  }).join('');
+}
+
+function hexToRgb(hex){
+  // Simple: return r,g,b from #rrggbb
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return r+','+g+','+b;
+}
+
+function selectInlineEPCType(stepId, typeId, typeName, typeDesc){
+  var s=getInlineEPC(stepId);
+  s.type=typeId; s.typeName=typeName;
+  // Highlight selected tag
+  var catData=EPC_DATA[s.cat]||EPC_DATA.job;
+  catData.items.forEach(function(item){
+    var tag=document.getElementById('epctag-'+stepId+'-'+item.id);
+    if(!tag) return;
+    if(item.id===typeId){tag.classList.add('sel');}
+    else{tag.classList.remove('sel');}
+  });
+  // Pre-fill description if empty
+  var descEl=document.getElementById('epc-desc-'+stepId);
+  if(descEl&&!descEl.value.trim()) descEl.value=typeDesc||'';
+  // Focus description
+  if(descEl) descEl.focus();
+}
+
+function saveInlineEPC(stepId){
+  var s=getInlineEPC(stepId);
+  var descEl=document.getElementById('epc-desc-'+stepId);
+  var ctrlEl=document.getElementById('epc-ctrl-'+stepId);
+  var desc=(descEl?descEl.value.trim():'');
+  if(!desc){
+    var statusEl=document.getElementById('epc-status-'+stepId);
+    if(statusEl){statusEl.textContent='⚠ Enter a condition description first.';statusEl.style.color='#fca5a5';}
+    if(descEl) descEl.focus();
+    return;
+  }
+  var st=getStep(stepId);if(!st)return;
+  var catData=EPC_DATA[s.cat]||EPC_DATA.job;
+  var ep={
+    id:uid(),
+    category:s.cat,
+    epcType:s.typeName||'EPC',
+    description:desc,
+    control:(ctrlEl?ctrlEl.value.trim():'')
+  };
+  st.epcs.push(ep);
+  // Reset form
+  if(descEl) descEl.value='';
+  if(ctrlEl) ctrlEl.value='';
+  inlineEPCState[stepId]={cat:s.cat,type:null,typeName:''};
+  // Clear AI suggestions
+  var aiEl=document.getElementById('epc-ai-'+stepId);if(aiEl) aiEl.innerHTML='';
+  var statusEl=document.getElementById('epc-status-'+stepId);
+  if(statusEl){statusEl.textContent='✓ EPC added';statusEl.style.color='#6ee7b7';setTimeout(function(){if(statusEl)statusEl.textContent='';},2000);}
+  // Re-render the full step to show the new EPC
+  renderAll();
+}
+
+function aiSuggestEPCsInline(stepId){
+  var st=getStep(stepId);if(!st)return;
+  var aiEl=document.getElementById('epc-ai-'+stepId);
+  var statusEl=document.getElementById('epc-status-'+stepId);
+  if(aiEl) aiEl.innerHTML='<div style="display:flex;align-items:center;gap:6px;padding:8px;color:var(--muted);font-size:.72rem"><div class="dots"><span></span><span></span><span></span></div> Claude is generating EPC suggestions...</div>';
+  if(statusEl) statusEl.textContent='';
+  var key=getApiKey();
+  if(!key){
+    if(aiEl) aiEl.innerHTML='<div style="padding:8px;color:#fca5a5;font-size:.72rem">⚠ Set your Anthropic API key in the sidebar first.</div>';
+    return;
+  }
+  var hazardList=(st.hazards||[]).map(function(h){return h.hazardDesc;}).join(', ');
+  var sys='You are an EI 3580 human factors expert. Respond ONLY with raw JSON, no markdown: '+
+    '{"epcs":[{"category":"job|person|org","type":"exact EPC type name from list","description":"specific condition for this task","control":"specific mitigation measure"}]}. '+
+    'Valid type names — Job: Information, Equipment Interface, Task Complexity, Routine/Unusual, Divided Attention, Procedures, Preparation, Time Pressure, Tools/Equipment, Communication, Work Environment. '+
+    'Person: Physical Capability, Fatigue, Stress/Morale, Workload, Training/Competence, Dilemmas. '+
+    'Org: Production vs Safety, Supervision, Staffing Levels, Unclear Roles. '+
+    'Provide exactly 4 specific, realistic EPCs for this task. Be specific to oil/gas/process industry.';
+  var usr='Step: '+st.description+
+    '
+Overall task: '+state.assess.description+
+    '
+Location: '+state.assess.location+
+    (hazardList?'
+Hazards identified: '+hazardList:'');
+  if(!key){
+  if(aiEl) aiEl.innerHTML=\'<div style="padding:8px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:5px;font-size:.72rem;color:#34d399">✋ AI suggestions require AI Mode. <a href=\"index.html\" style=\"color:var(--accent)\">Switch to AI Mode →</a></div>\';
+  return;
+  }
+  
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:AI_MODEL,max_tokens:1500,system:sys,messages:[{role:'user',content:usr}]})
+  }).then(function(res){return res.json();}).then(function(data){
+    var raw='';
+    if(data.content) for(var i=0;i<data.content.length;i++) if(data.content[i].type==='text'){raw=data.content[i].text;break;}
+    // Handle API errors returned as JSON
+    if(data.error){
+      if(aiEl) aiEl.innerHTML='<div style="padding:8px;color:#fca5a5;font-size:.72rem">⚠ API error: '+esc(data.error.message||'Unknown error')+'</div>';
+      return;
+    }
+    var first=raw.indexOf('{'),last=raw.lastIndexOf('}');
+    var parsed;
+    try{parsed=JSON.parse(raw.slice(first,last+1));}
+    catch(e){
+      if(aiEl) aiEl.innerHTML='<div style="padding:8px;color:#fca5a5;font-size:.72rem">⚠ Could not parse AI response. Try again.</div>';
+      return;
+    }
+    var epcs=parsed.epcs||[];
+    if(!epcs.length){
+      if(aiEl) aiEl.innerHTML='<div style="padding:8px;color:var(--muted);font-size:.72rem">No suggestions returned. Try again.</div>';
+      return;
+    }
+    var html='<div style="background:rgba(0,180,216,.05);border:1px solid rgba(0,180,216,.2);border-radius:6px;padding:10px 12px;margin-top:4px">';
+    html+='<div style="font-size:.66rem;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px">⚡ AI Suggestions — Click any to add instantly</div>';
+    epcs.forEach(function(ep){
+      var catData=EPC_DATA[ep.category]||EPC_DATA.job;
+      html+='<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 9px;background:var(--bg-card2);border:1px solid var(--border);border-radius:5px;margin-bottom:5px;cursor:pointer;transition:all .15s" '+
+        'onmouseover="this.style.borderColor=''+catData.color+''" onmouseout="this.style.borderColor='var(--border)'" '+
+        'onclick="applyInlineEPCSuggestion('+stepId+','+JSON.stringify(ep)+')">' +
+        '<span style="background:rgba(0,0,0,.3);color:'+catData.color+';border:1px solid '+catData.color+'44;padding:2px 7px;border-radius:4px;font-size:.6rem;font-weight:700;flex-shrink:0;white-space:nowrap">'+esc(catData.label.split(' ')[0])+'</span>'+
+        '<div style="flex:1;min-width:0"><strong style="font-size:.74rem;color:'+catData.color+'">'+esc(ep.type)+'</strong>'+
+        '<div style="font-size:.7rem;color:var(--muted);margin-top:1px;line-height:1.4">'+esc(ep.description)+'</div>'+
+        (ep.control?'<div style="font-size:.66rem;color:var(--green);margin-top:2px">✓ '+esc(ep.control)+'</div>':'')+
+        '</div>'+
+        '<span style="color:var(--accent);font-size:.75rem;flex-shrink:0;align-self:center">+ Add</span>'+
+        '</div>';
+    });
+    html+='</div>';
+    if(aiEl) aiEl.innerHTML=html;
+  }).catch(function(e){
+    if(aiEl) aiEl.innerHTML='<div style="padding:8px;color:#fca5a5;font-size:.72rem">⚠ Network error: '+esc(e.message)+'</div>';
+  });
+}
+
+function applyInlineEPCSuggestion(stepId, ep){
+  // Directly saves the EPC from AI suggestion — one click to add
+  var st=getStep(stepId);if(!st)return;
+  var catData=EPC_DATA[ep.category]||EPC_DATA.job;
+  var newEP={
+    id:uid(),
+    category:ep.category||'job',
+    epcType:ep.type||'EPC',
+    description:ep.description||'',
+    control:ep.control||''
+  };
+  st.epcs.push(newEP);
+  // Show brief confirmation
+  var statusEl=document.getElementById('epc-status-'+stepId);
+  if(statusEl){statusEl.textContent='✓ Added: '+ep.type;statusEl.style.color='#6ee7b7';setTimeout(function(){if(statusEl)statusEl.textContent='';},2500);}
+  // Re-render to show new EPC and refresh AI list
+  renderAll();
+}
+
+// ── AI INTEGRATION ────────────────────────────────────────────
+var AI_MODEL='claude-sonnet-4-20250514'; // Manual version
+function getApiKey(){return '';}
+function setApiKey(){}
+function clearApiKey(){}
+function updateKeyUI(){}
+function openKeyModal(){alert('Manual Mode — no API key needed. Switch to AI Mode for AI suggestions.');}
+
+function callAI(systemPrompt,userPrompt,onSuccess,onError){ if(onError) onError('Manual mode'); return; /* DISABLED in manual */
+  var key=getApiKey();
+  if(!key){alert('Set your Anthropic API key first (in sidebar).');return;}
+  setAIStatus('<div class="dots"><span></span><span></span><span></span></div> Asking Claude...');
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:AI_MODEL,max_tokens:2500,system:systemPrompt,messages:[{role:'user',content:userPrompt}]})
+  }).then(function(res){
+    if(!res.ok) return res.text().then(function(t){
+      var msg='API error '+res.status;
+      if(res.status===401||res.status===403) msg='API key invalid. Check your key.';
+      else if(res.status===429) msg='Rate limit reached. Try again in a moment.';
+      setAIStatus('⚠ '+msg);
+      if(onError) onError(msg);
+    });
+    return res.json().then(function(data){
+      var raw='';
+      if(data.content&&Array.isArray(data.content)) for(var i=0;i<data.content.length;i++) if(data.content[i].type==='text'){raw=data.content[i].text;break;}
+      var first=raw.indexOf('{'),last=raw.lastIndexOf('}');
+      var parsed;
+      try{parsed=JSON.parse(raw.slice(first,last+1));}
+      catch(e){setAIStatus('⚠ Parse error: '+e.message);if(onError)onError(e.message);return;}
+      setAIStatus('✓ Suggestions ready. Click any to apply.');
+      if(onSuccess) onSuccess(parsed);
+    });
+  }).catch(function(e){setAIStatus('⚠ Network error: '+e.message);if(onError)onError(e.message);});
+}
+
+function setAIStatus(msg){var el=document.getElementById('aiStatus');if(el)el.innerHTML=msg;}
+function clearAISuggestBox(){var el=document.getElementById('aiSuggestBox');if(el)el.innerHTML='';}
+
+function aiSuggestSteps(){
+  if(!state.assess.description){alert('Enter a task description in Assessment Setup first.');return;}
+  var sys='You are a process safety expert (EI 3580). Respond ONLY with raw JSON, no markdown: {"steps":["step1","step2","step3","step4","step5"]}. Provide 5-6 realistic, specific task steps for the described activity.';
+  var usr='Task: '+state.assess.description+'\nLocation: '+state.assess.location;
+  callAI(sys,usr,function(parsed){
+    var box=document.getElementById('aiSuggestBox');if(!box)return;
+    var html='<div style="font-size:.7rem;color:var(--accent);font-weight:700;margin-bottom:5px">AI Suggested Steps — click to add:</div>';
+    (parsed.steps||[]).forEach(function(s,i){
+      html+='<div class="chip" onclick="addStep(\''+esc(s)+'\')"><span class="chip-label">Step '+(i+1)+'</span>'+esc(s)+'</div>';
+    });
+    html+='<button class="btn btn-primary btn-sm" style="margin-top:5px;width:100%;justify-content:center" onclick="addAllAISteps('+JSON.stringify(parsed.steps||[]).replace(/'/g,"&#39;")+')">Add All</button>';
+    box.innerHTML=html;
+  });
+}
+
+function addAllAISteps(stepsArr){
+  if(!Array.isArray(stepsArr)) return;
+  stepsArr.forEach(function(s){if(s&&s.trim()){var step={id:uid(),number:state.assess.steps.length+1,description:s.trim(),hazards:[],epcs:[]};state.assess.steps.push(step);}});
+  navigate('steps');
+}
+
+function aiSuggestHazards(){
+  var src=ENERGY_SOURCES.find(function(e){return e.id===state.hzEnergy;});
+  if(!src){alert('Select an energy source first.');return;}
+  var st=getStep(state.riskTarget?state.riskTarget.stepId:state.currentStepId);
+  var sys='You are a HSE hazard identification expert (EI 3580). Respond ONLY with raw JSON: {"hazards":["hazard1","hazard2","hazard3"]}. 3 specific hazards for the energy source in this task context.';
+  var usr='Energy source: '+src.name+'\nTask: '+(st?st.description:'')+(state.assess.description?'\nOverall activity: '+state.assess.description:'');
+  callAI(sys,usr,function(parsed){
+    var box=document.getElementById('aiSuggestBox');if(!box)return;
+    var html='<div style="font-size:.7rem;color:var(--orange);font-weight:700;margin-bottom:5px">⚡ Hazard Suggestions:</div>';
+    (parsed.hazards||[]).forEach(function(h){
+      html+='<div class="chip" onclick="applyHazardSuggestion(\''+esc(h)+'\')"><span class="chip-label" style="color:var(--orange)">'+src.icon+' Hazard</span>'+esc(h)+'</div>';
+    });
+    box.innerHTML=html;
+  });
+}
+
+function applyHazardSuggestion(desc){
+  document.getElementById('hzDesc').value=desc;
+  clearAISuggestBox();
+}
+
+function aiSuggestEPCs(){
+  var st=getStep(state.riskTarget?state.riskTarget.stepId:state.currentStepId);
+  var sys='You are a human factors EPC expert (EI 3580). Respond ONLY with raw JSON: {"epcs":[{"category":"job|person|org","type":"EPC type name","description":"specific condition","control":"mitigation"}]}. Provide 3 EPCs.';
+  var usr='Step: '+(st?st.description:'')+'\nTask: '+state.assess.description;
+  callAI(sys,usr,function(parsed){
+    var box=document.getElementById('aiSuggestBox');if(!box)return;
+    var html='<div style="font-size:.7rem;color:var(--accent);font-weight:700;margin-bottom:5px">⚠ EPC Suggestions:</div>';
+    (parsed.epcs||[]).forEach(function(ep){
+      var cat=EPC_DATA[ep.category]||EPC_DATA.job;
+      html+='<div class="chip" onclick="applyEPCSuggestion(\''+esc(JSON.stringify(ep))+'\')"><span class="chip-label" style="color:'+cat.color+'">'+cat.label+'</span><strong>'+esc(ep.type)+'</strong>: '+esc(ep.description)+'</div>';
+    });
+    box.innerHTML=html;
+  });
+}
+
+function applyEPCSuggestion(jsonStr){
+  try{var ep=JSON.parse(jsonStr.replace(/&quot;/g,'"'));
+    state.epcCategory=ep.category||'job';
+    state.epcType=null;
+    var el=document.getElementById('epcDesc');if(el) el.value=ep.description||'';
+    var cl=document.getElementById('epcCtrl');if(cl) cl.value=ep.control||'';
+    renderEPCCatGrid();
+    clearAISuggestBox();
+  }catch(e){}
+}
+
+function aiSuggestControlsFor(stepId,hazId){
+  state.riskTarget={stepId:stepId,hazardId:hazId};
+  var st=getStep(stepId),h=st?getHazard(st,hazId):null;
+  if(!h){return;}
+  var src=ENERGY_SOURCES.find(function(e){return e.id===h.energySource;})||{name:'unknown'};
+  var sys='You are a process safety controls expert (ALARP hierarchy). Respond ONLY with raw JSON: {"controls":[{"type":"elimination|substitution|engineering|administrative|ppe","description":"specific control"}]}. Provide 4 controls across the hierarchy.';
+  var usr='Hazard: '+h.hazardDesc+'\nEnergy: '+src.name+'\nRisk level: '+(h.initRisk||'not rated')+'\nStep: '+(st?st.description:'')+'\nTask: '+state.assess.description;
+  callAI(sys,usr,function(parsed){
+    var box=document.getElementById('aiSuggestBox');if(!box)return;
+    var html='<div style="font-size:.7rem;color:var(--green);font-weight:700;margin-bottom:5px">🛡 Control Suggestions:</div>';
+    (parsed.controls||[]).forEach(function(c){
+      var ct=CONTROL_TYPES.find(function(t){return t.id===c.type;})||{abbrev:'CTRL',cls:'ctrl-adm'};
+      html+='<div class="chip" onclick="applyControlSuggestion(\''+stepId+'\',\''+hazId+'\',\''+esc(c.type)+'\',\''+esc(c.description).replace(/\'/g,"&#39;")+'\')"><span class="chip-label" style="color:var(--green)">'+ct.abbrev+'</span>'+esc(c.description)+'</div>';
+    });
+    box.innerHTML=html;
+  });
+}
+
+function aiSuggestControls(){aiSuggestControlsFor(state.riskTarget.stepId,state.riskTarget.hazardId);}
+function applyControlSuggestion(stepId,hazId,type,desc){
+  var st=getStep(parseInt(stepId)),h=st?getHazard(st,parseInt(hazId)):null;
+  if(!h)return;
+  h.controls.push({id:uid(),type:type,description:desc});
+  clearAISuggestBox();
+  closeModal('ctrlModal');
+  renderAll();
+}
+
+function openAIStepModal(){ alert('AI Full Analysis requires AI Mode.'); return; // alert('AI Full Analysis requires AI Mode. Switch using the button in the top-right.'); return; /* disabled */ //
+  var st=getStep(state.currentStepId);if(!st)return;
+  document.getElementById('aiStepModalSub').textContent='Full AI analysis of step: '+st.description;
+  document.getElementById('aiStepModalBody').innerHTML='<div style="text-align:center;padding:30px"><div class="dots"><span></span><span></span><span></span></div><p style="color:var(--muted);margin-top:10px;font-size:.78rem">Claude is analysing this step...</p></div>';
+  document.getElementById('aiApplyBtn').style.display='none';
+  openModal('aiStepModal');
+
+  var sys='You are an EI 3580 task-based risk assessment expert. Respond ONLY with raw JSON: '+
+    '{"hazards":[{"energySource":"one of: gravity|motion|mechanical|electrical|pressure|temperature|chemical|biological|radiation|sound","desc":"hazard description","severity":4,"likelihood":"C","controls":[{"type":"engineering","desc":"control"}]}],"epcs":[{"category":"job|person|org","type":"EPC name","description":"condition","control":"measure"}],"guidance":"2 sentence expert comment"}. '+
+    'Provide 3 hazards with 2 controls each, and 3 EPCs.';
+  var usr='Step: '+st.description+'\nTask: '+state.assess.description+'\nLocation: '+state.assess.location;
+
+  var key=getApiKey();if(!key){document.getElementById('aiStepModalBody').innerHTML='<div style="padding:20px;color:var(--red)">Set your API key first.</div>';return;}
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:AI_MODEL,max_tokens:3000,system:sys,messages:[{role:'user',content:usr}]})
+  }).then(function(res){return res.json();}).then(function(data){
+    var raw='';if(data.content) for(var i=0;i<data.content.length;i++) if(data.content[i].type==='text'){raw=data.content[i].text;break;}
+    var first=raw.indexOf('{'),last=raw.lastIndexOf('}');
+    var parsed;try{parsed=JSON.parse(raw.slice(first,last+1));}catch(e){
+      document.getElementById('aiStepModalBody').innerHTML='<div style="padding:20px;color:var(--red)">Parse error. Try again.</div>';return;}
+    state.aiLastResult=parsed;
+    var html='';
+    if(parsed.guidance) html+='<div class="rule" style="margin-bottom:12px"><strong>Expert Guidance:</strong> '+esc(parsed.guidance)+'</div>';
+    html+='<div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:.8rem;color:var(--orange);letter-spacing:.06em;margin-bottom:6px">HAZARDS IDENTIFIED</div>';
+    (parsed.hazards||[]).forEach(function(h,i){
+      var src=ENERGY_SOURCES.find(function(e){return e.id===h.energySource;})||{name:h.energySource||'Unknown',icon:'?'};
+      var rl=getRiskLevel(h.severity||3,h.likelihood||'C');
+      html+='<div style="background:var(--bg-card2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px">'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'+
+        '<span>'+src.icon+'</span><strong style="font-size:.78rem">'+esc(src.name)+': </strong><span style="font-size:.76rem">'+esc(h.desc)+'</span>'+
+        '<span class="risk-chip '+rl+'" style="margin-left:auto;font-size:.6rem">'+getRiskLabel(rl)+'</span></div>'+
+        '<div style="margin-left:14px">'+
+        (h.controls||[]).map(function(c){var ct=CONTROL_TYPES.find(function(t){return t.id===c.type;})||{abbrev:'CTRL',cls:'ctrl-adm'};return '<div class="ctrl-item" style="margin-bottom:2px"><span class="ctrl-type-badge '+ct.cls+'">'+ct.abbrev+'</span><span class="ctrl-text" style="font-size:.72rem">'+esc(c.desc)+'</span></div>';}).join('')+
+        '</div></div>';
+    });
+    html+='<div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:.8rem;color:var(--accent);letter-spacing:.06em;margin:12px 0 6px">ERROR-PRODUCING CONDITIONS</div>';
+    (parsed.epcs||[]).forEach(function(ep){
+      var cat=EPC_DATA[ep.category]||EPC_DATA.job;
+      html+='<div style="background:rgba(0,180,216,.05);border:1px solid rgba(0,180,216,.15);border-radius:5px;padding:7px 10px;margin-bottom:5px;font-size:.74rem">'+
+        '<span style="color:'+cat.color+';font-weight:700">'+esc(ep.type)+'</span> ('+cat.label+')<div style="color:var(--muted);margin-top:2px">'+esc(ep.description)+'</div>'+
+        (ep.control?'<div style="color:var(--green);margin-top:2px">✓ '+esc(ep.control)+'</div>':'')+
+        '</div>';
+    });
+    document.getElementById('aiStepModalBody').innerHTML=html;
+    document.getElementById('aiApplyBtn').style.display='inline-block';
+  }).catch(function(e){document.getElementById('aiStepModalBody').innerHTML='<div style="padding:20px;color:var(--red)">Error: '+e.message+'</div>';});
+}
+
+function applyAIAnalysis(){
+  var parsed=state.aiLastResult;if(!parsed)return;
+  var st=getStep(state.currentStepId);if(!st)return;
+  (parsed.hazards||[]).forEach(function(h){
+    var rl=getRiskLevel(h.severity||3,h.likelihood||'C');
+    var hazard={id:uid(),energySource:h.energySource||'gravity',hazardDesc:h.desc||'',
+      initSev:h.severity||3,initLik:h.likelihood||'C',initRisk:rl,
+      resSev:null,resLik:null,resRisk:null,
+      controls:(h.controls||[]).map(function(c){return{id:uid(),type:c.type||'engineering',description:c.desc||''};})
+    };
+    st.hazards.push(hazard);
+  });
+  (parsed.epcs||[]).forEach(function(ep){
+    var cat=EPC_DATA[ep.category]||EPC_DATA.job;
+    st.epcs.push({id:uid(),category:ep.category||'job',epcType:ep.type||'EPC',description:ep.description||'',control:ep.control||''});
+  });
+  closeModal('aiStepModal');
+  renderAll();
+  setAIStatus('✓ Applied '+((parsed.hazards||[]).length)+' hazards and '+((parsed.epcs||[]).length)+' EPCs to the step.');
+}
+
+// ── EXPORTS ───────────────────────────────────────────────────
+function exportJSON(){
+  var blob=new Blob([JSON.stringify(state.assess,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='risk2safe_ra_'+(state.assess.title||'assessment').replace(/\s+/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.json';a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportExcel(){
+  if(typeof XLSX==='undefined'){alert('Excel library not loaded. Check internet connection.');return;}
+  var wb=XLSX.utils.book_new();
+  // Sheet 1: Summary
+  var s1=[['Risk2Safe RA Studio — Task-Based Risk Assessment'],[''],
+    ['Assessment',state.assess.title||''],['Location',state.assess.location||''],
+    ['Date',state.assess.date||''],['Assessor',state.assess.assessor||''],
+    ['Task',state.assess.description||''],[''],['Generated',new Date().toISOString().split('T')[0]]];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s1),'Summary');
+  // Sheet 2: Risk Register
+  var s2=[['Step#','Step Description','Energy Source','Hazard','Initial Sev','Initial Lik','Initial Risk','Controls','Residual Sev','Residual Lik','Residual Risk']];
+  state.assess.steps.forEach(function(st){
+    (st.hazards||[]).forEach(function(h){
+      var src=ENERGY_SOURCES.find(function(e){return e.id===h.energySource;})||{name:'Unknown'};
+      var ctls=(h.controls||[]).map(function(c){var ct=CONTROL_TYPES.find(function(t){return t.id===c.type;})||{abbrev:'?'};return '['+ct.abbrev+'] '+c.description;}).join('; ');
+      s2.push([st.number,st.description,src.name,h.hazardDesc,h.initSev||'',h.initLik||'',getRiskLabel(h.initRisk||'UNRATED'),ctls,h.resSev||'',h.resLik||'',getRiskLabel(h.resRisk||'UNRATED')]);
+    });
+  });
+  var ws2=XLSX.utils.aoa_to_sheet(s2);
+  ws2['!cols']=[{wch:6},{wch:35},{wch:12},{wch:40},{wch:10},{wch:10},{wch:14},{wch:50},{wch:10},{wch:10},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Risk Register');
+  // Sheet 3: EPCs
+  var s3=[['Step#','Step','Category','EPC Type','Description','Control']];
+  state.assess.steps.forEach(function(st){(st.epcs||[]).forEach(function(ep){var cat=EPC_DATA[ep.category]||EPC_DATA.job;s3.push([st.number,st.description,cat.label,ep.epcType,ep.description,ep.control||'']);});});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s3),'EPCs');
+  XLSX.writeFile(wb,'risk2safe_ra_'+(state.assess.title||'assessment').replace(/\s+/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.xlsx');
+}
+
+function exportWord(){
+  if(typeof htmlDocx==='undefined'){alert('Word export library not loaded.');return;}
+  var html=buildReportHTML();
+  try{
+    var blob=htmlDocx.asBlob(html,{orientation:'portrait',margins:{top:720,bottom:720,left:900,right:900}});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;a.download='risk2safe_ra_report_'+new Date().toISOString().split('T')[0]+'.docx';a.click();
+    URL.revokeObjectURL(url);
+  }catch(e){alert('Word export error: '+e.message);}
+}
+
+function buildReportHTML(){
+  var s=state.assess,dateStr=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  var css='<style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#222;line-height:1.5}h1{font-size:18pt;color:#1e3a8a;border-bottom:2px solid #1e3a8a;padding-bottom:4px;margin-top:30px}h2{font-size:13pt;color:#1e3a8a;border-left:4px solid #1e3a8a;padding-left:8px;margin-top:16px}table{width:100%;border-collapse:collapse;font-size:10pt;margin:8px 0}th{background:#1e3a8a;color:#fff;padding:6px 8px;text-align:left;border:1px solid #1e3a8a}td{padding:5px 8px;border:1px solid #cbd5e1;vertical-align:top}tr:nth-child(even) td{background:#f8fafc}.risk-RED{color:#991b1b;font-weight:700}.risk-HIGH_MED{color:#92400e;font-weight:700}.risk-MEDIUM{color:#713f12;font-weight:700}.risk-LOW{color:#166534;font-weight:700}.cover{text-align:center;padding:80px 40px;page-break-after:always}.footer{margin-top:40px;border-top:1px solid #ccc;padding-top:8px;color:#64748b;font-size:9pt;text-align:center}</style>';
+  var h='<!DOCTYPE html><html><head><meta charset="UTF-8">'+css+'</head><body>';
+  h+='<div class="cover"><div style="font-size:28pt;font-weight:700;color:#1e3a8a">Task-Based Risk Assessment</div>';
+  h+='<div style="font-size:14pt;color:#475569;margin:10px 0 30px">EI 3580 Methodology</div>';
+  h+='<div style="border:2px solid #1e3a8a;padding:20px;display:inline-block;text-align:left"><div style="font-size:9pt;color:#64748b;text-transform:uppercase;letter-spacing:1px">Assessment</div><div style="font-size:14pt;font-weight:700">'+esc(s.title||'—')+'</div>';
+  h+='<div style="font-size:9pt;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-top:14px">Location</div><div>'+esc(s.location||'—')+'</div>';
+  h+='<div style="font-size:9pt;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-top:10px">Date</div><div>'+esc(s.date||dateStr)+'</div>';
+  h+='<div style="font-size:9pt;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-top:10px">Assessor</div><div>'+esc(s.assessor||'—')+'</div>';
+  h+='</div><div style="margin-top:60px;color:#94a3b8;font-size:10pt">Risk2Safe RA Studio — Powered by EI 3580 & ADNOC 6×6 Matrix</div></div>';
+  h+='<h1>1. Task Description</h1><p>'+esc(s.description||'—')+'</p>';
+  h+='<h1>2. Risk Register</h1><table><thead><tr><th>#</th><th>Step</th><th>Energy</th><th>Hazard</th><th>Initial Risk</th><th>Controls</th><th>Residual Risk</th></tr></thead><tbody>';
+  var row=1;
+  s.steps.forEach(function(st){
+    (st.hazards||[]).forEach(function(hz){
+      var src=ENERGY_SOURCES.find(function(e){return e.id===hz.energySource;})||{name:'Unknown'};
+      var ctls=(hz.controls||[]).map(function(c){var ct=CONTROL_TYPES.find(function(t){return t.id===c.type;})||{abbrev:'?'};return '['+ct.abbrev+'] '+c.description;}).join('; ');
+      h+='<tr><td>'+row+'</td><td>'+esc(st.description)+'</td><td>'+esc(src.name)+'</td><td>'+esc(hz.hazardDesc)+'</td>'+
+        '<td class="risk-'+(hz.initRisk||'UNRATED')+'">'+getRiskLabel(hz.initRisk||'UNRATED')+'</td>'+
+        '<td style="font-size:9pt">'+esc(ctls||'—')+'</td>'+
+        '<td class="risk-'+(hz.resRisk||'UNRATED')+'">'+getRiskLabel(hz.resRisk||'UNRATED')+'</td></tr>';
+      row++;
+    });
+  });
+  h+='</tbody></table>';
+  h+='<h1>3. Error-Producing Conditions</h1><table><thead><tr><th>Step</th><th>Category</th><th>EPC</th><th>Description</th><th>Control</th></tr></thead><tbody>';
+  s.steps.forEach(function(st){(st.epcs||[]).forEach(function(ep){var cat=EPC_DATA[ep.category]||EPC_DATA.job;h+='<tr><td>'+esc(st.description)+'</td><td>'+cat.label+'</td><td>'+esc(ep.epcType)+'</td><td>'+esc(ep.description)+'</td><td>'+esc(ep.control||'—')+'</td></tr>';});});
+  h+='</tbody></table>';
+  h+='<div class="footer">Generated by Risk2Safe RA Studio on '+dateStr+' — EI 3580 methodology / ADNOC 6×6 Risk Matrix</div></body></html>';
+  return h;
+}
+
+function resetAll(){
+  if(!confirm('Reset everything? All assessment data will be lost.'))return;
+  state.assess={title:'',location:'',date:'',assessor:'',department:'',description:'',steps:[]};
+  nextId=1;
+  navigate('dashboard');
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+renderAll();
+
+</script>
+</body>
+</html>
