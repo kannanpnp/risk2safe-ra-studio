@@ -1,8 +1,8 @@
 # ⬡ Risk2Safe Risk Assessment Studio
 
-**Task-Based Risk Assessment · EI 3580 · ADNOC 6×6 Risk Matrix**
+**Task-Based Risk Assessment · EI 3580 · 6×6 Risk Matrix**
 
-A professional, production-ready web application for conducting task-based risk assessments aligned with the Energy Institute Guidance on Human Factors in Task-Based Risk Assessment (EI 3580, January 2025) and the ADNOC Corporate 6×6 Risk Matrix (HSE-RM-ST01 v1, August 2019).
+A professional, production-ready web application for conducting task-based risk assessments aligned with the Energy Institute Guidance on Human Factors in Task-Based Risk Assessment (EI 3580, January 2025) and the 6×6 Risk Matrix.
 
 ---
 
@@ -11,7 +11,7 @@ A professional, production-ready web application for conducting task-based risk 
 | Feature | AI-Assisted Version | Manual Version |
 |---|---|---|
 | EI 3580 Six-Stage Methodology | ✅ | ✅ |
-| ADNOC 6×6 Interactive Matrix | ✅ | ✅ |
+| 6×6 Interactive Matrix | ✅ | ✅ |
 | Energy & Error Wheel | ✅ | ✅ |
 | All 21 Error-Producing Conditions | ✅ | ✅ |
 | Hierarchy of Controls | ✅ | ✅ |
@@ -166,7 +166,6 @@ VITE_ANTHROPIC_API_KEY=sk-ant-api03-...
 ## 📖 References
 
 - EI 3580 — *Guidance on Human Factors in Task-Based Risk Assessment*, Energy Institute, January 2025
-- ADNOC HSE-RM-ST01 v1 — *ADNOC Corporate Risk Matrix*, August 2019
 - James Reason — *Managing the Risks of Organisational Accidents*, 1997
 - CCPS — *Guidelines for Hazard Evaluation Procedures*, 3rd Edition
 
@@ -178,4 +177,4 @@ MIT Licence — free to use, adapt, and distribute with attribution.
 
 ---
 
-*Developed for HSE professionals in the oil & gas industry. Aligned with EI 3580 (Jan 2025) and ADNOC risk management standards.*
+*Developed for HSE professionals in the oil & gas industry. Aligned with EI 3580 (Jan 2025).*
